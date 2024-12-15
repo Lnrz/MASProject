@@ -23,10 +23,14 @@ class MapManager:
 
 class Agent:
     
-    def __init__(self, start_pos: Vec2D, target_pos: Vec2D, opponent_pos: Vec2D, next_pos_selector: NextPosSelector, policy_file_name: str, map_size: MapSize) -> None:
+    def __init__(self, start_pos: Vec2D, target_pos: Vec2D, opponent_pos: Vec2D, next_pos_selector: NextPosSelector, policy_file_name: str | None, map_size: MapSize) -> None:
         self.__state: State = State(agent_pos=copy(start_pos), opponent_pos=opponent_pos, target_pos=target_pos)
         self.__policy: Policy = Policy()
-        self.__policy.load_from_file(policy_file_name, map_size.N3M3)
+        if policy_file_name:
+            self.__policy.read_from_file(policy_file_name, map_size.N3M3)
+        else:
+            print("WARNING: the policy file was not provided, using default policy")
+            self.__policy.fill(Action.Up, map_size.N3M3)
         self.__next_pos_selector: NextPosSelector = next_pos_selector
 
     def get_pos(self) -> Vec2D:
