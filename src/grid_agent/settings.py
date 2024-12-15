@@ -75,14 +75,16 @@ class GameSettings:
         match splitted_line:
             case ["mapsize", n, m]:
                 self.map_size = Vec2D(int(n), int(m))
-            case ["obstacle", xo, yo, xe, ye]:
-                self.obstacles.append(Obstacle(Vec2D(int(xo), int(yo)), Vec2D(int(xe), int(ye))))
-            case ["agent", xs, ys]:
-                self.agent_start_pos = Vec2D(int(xs), int(ys))
-            case ["target", xs, ys]:
-                self.target_start_pos = Vec2D(int(xs), int(ys))
-            case ["opponent", xs, ys]:
-                self.opponent_start_pos = Vec2D(int(xs), int(ys))
+            case ["obstacle", origin_x, origin_y, extent_x, extent_y]:
+                self.obstacles.append(Obstacle(Vec2D(int(origin_x), int(origin_y)), Vec2D(int(extent_x), int(extent_y))))
+            case ["agent", start_x, start_y]:
+                self.agent_start_pos = Vec2D(int(start_x), int(start_y))
+            case ["target", start_x, start_y]:
+                self.target_start_pos = Vec2D(int(start_x), int(start_y))
+            case ["opponent", start_x, start_y]:
+                self.opponent_start_pos = Vec2D(int(start_x), int(start_y))
+            case ["policy", policy_path]:
+                self.policy_file_path = policy_path
 
     def __set_command_line_settings(self, command_line_settings: CommandLineSettings):
         if command_line_settings.policy_file_path:
