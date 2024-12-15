@@ -6,15 +6,19 @@ import re
 class CommandLineSettings:
     
     def __init__(self) -> None:
-        self.__parser: argparse.ArgumentParser = argparse.ArgumentParser(prog="Grid Agent")
-        self.__parser.add_argument("-settings_file", type=str, help="Specify the path to the settings file")
-        self.__parser.add_argument("-policy_file", type=str, help="Specify the path to the policy file")
-        self.__parser.add_argument("-agent_start", type=str, help="Specify the agent starting position (x,y)")
-        self.__parser.add_argument("-target_start", type=str, help="Specify the target starting position (x,y)")
-        self.__parser.add_argument("-opponent_start", type=str, help="Specify the opponent starting position (x,y)")
+        parser: argparse.ArgumentParser = argparse.ArgumentParser(prog="Grid Agent")
+        self.__add_arguments(parser)
+        self.__parse(parser)
 
-    def parse(self) -> None:
-        args = self.__parser.parse_args()
+    def __add_arguments(self, parser: argparse.ArgumentParser) -> None:
+        parser.add_argument("-settings_file", type=str, help="Specify the path to the settings file")
+        parser.add_argument("-policy_file", type=str, help="Specify the path to the policy file")
+        parser.add_argument("-agent_start", type=str, help="Specify the agent starting position (x,y)")
+        parser.add_argument("-target_start", type=str, help="Specify the target starting position (x,y)")
+        parser.add_argument("-opponent_start", type=str, help="Specify the opponent starting position (x,y)")
+
+    def __parse(self, parser: argparse.ArgumentParser) -> None:
+        args = parser.parse_args()
         self.settings_file_path: str | None = args.settings_file
         self.policy_file_path: str | None = args.policy_file
         self.agent_start_pos: Vec2D | None = None
@@ -28,9 +32,9 @@ class CommandLineSettings:
             self.opponent_start_pos_start_pos = self.__string_to_vec2D(args.opponent_start)
 
     def __string_to_vec2D(self, string: str) -> Vec2D:
-        match: re.Match | None = re.search("((\d+),(\d+))", string)
+        match: re.Match | None = re.search(r"\((\d+),(\d+)\)", string)
         if match:
-            return Vec2D(int(match[1], int(match[2])))
+            return Vec2D(int(match[1]), int(match[2]))
         else:
             raise ValueError(f"A position was ill-formed.\n" + 
                              f"It should have been (x,y) but it was {string}") 
@@ -49,7 +53,7 @@ class GameSettings:
         self.agent_start_pos: Vec2D = Vec2D(0, 0)
         self.target_start_pos: Vec2D = Vec2D(2, 2)
         self.opponent_start_pos: Vec2D = Vec2D(2, 0)
-        self.policy_file_path: str = "policy.bin"
+        self.policy_file_path: str | None = None
         self.target_action_selector: ActionSelector = STDActionSelector()
         self.opponent_action_selector: ActionSelector = STDActionSelector()
         self.agent_next_pos_selector: NextPosSelector = STDNextPosSelector()
