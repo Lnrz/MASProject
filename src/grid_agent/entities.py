@@ -29,7 +29,7 @@ class Agent:
         if policy_file_name:
             self.__policy.read_from_file(policy_file_name, map_size.N3M3)
         else:
-            print("WARNING: the policy file was not provided, using default policy")
+            print("WARNING: The policy file was not provided, using default policy")
             self.__policy.fill(Action.Up, map_size.N3M3)
         self.__next_pos_selector: NextPosSelector = next_pos_selector
 
