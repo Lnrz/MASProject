@@ -1,23 +1,30 @@
-from grid_agent.data_structs import State, Policy, MapSize, Obstacle, Vec2D, Action, Result
-from grid_agent.functors import ActionSelector, NextPosSelector
-from grid_agent.settings import GameSettings
-from copy import copy
+from grid_agent.data_structs import State, Policy, MapSize, Obstacle, Vec2D, Action, Result, ValueFunction
+from grid_agent.functors import ActionSelector, NextPosSelector, RewardFunction
+from grid_agent.settings import GameSettings, TrainSettings
+from copy import copy, deepcopy
 
 class MapManager:
     
-    def __init__(self, map_size: Vec2D) -> None:
+    def __init__(self, map_size: Vec2D, obstacles: list[Obstacle]) -> None:
         self.map_size: MapSize = MapSize(map_size.x, map_size.y)
-        self.__obstacles: list[Obstacle] = list[Obstacle]()
+        self.__obstacles: list[Obstacle] = obstacles
 
-    def add_obstacle(self, obstacle: Obstacle) -> None:
-        self.__obstacles.append(obstacle)
+    def move_if_possible(self, pos: Vec2D, action: Action) -> None:
+        next_pos: Vec2D = copy(pos)
+        next_pos.move(action)
+        if self.is_pos_possible(next_pos):
+            pos.copy(next_pos)
 
-    def can_move_to(self, pos: Vec2D) -> bool:
-        if self.__out_of_bounds(pos):
+    def is_state_possible(self, state: State) -> bool:
+        return (self.is_pos_possible(state.agent_pos) and self.is_pos_possible(state.target_pos) and self.is_pos_possible(state.opponent_pos) and
+                state.target_pos != state.opponent_pos)
+
+    def is_pos_possible(self, pos: Vec2D) -> bool:
+        if self.__is_out_of_bounds(pos):
             return False
         return not any([obs.is_inside(pos) for obs in self.__obstacles])
     
-    def __out_of_bounds(self, pos: Vec2D) -> bool:
+    def __is_out_of_bounds(self, pos: Vec2D) -> bool:
         return (pos.x < 0 or pos.x >= self.map_size.N or
                 pos.y < 0 or pos.y >= self.map_size.M)
 
@@ -39,7 +46,7 @@ class Agent:
     def move(self, map_manager: MapManager) -> None:
         action: Action = self.__policy.get_action(self.__state, map_manager.map_size)
         next_pos: Vec2D = self.__next_pos_selector.get_next_pos(self.__state.agent_pos, action)
-        if (map_manager.can_move_to(next_pos)):
+        if (map_manager.is_pos_possible(next_pos)):
             self.__state.agent_pos.copy(next_pos)
 
 class MovingEntity:
@@ -59,13 +66,13 @@ class MovingEntity:
     def move(self, map_manager: MapManager) -> None:
         action: Action = self.__action_selector.get_action()
         next_pos: Vec2D = self.__next_pos_selector.get_next_pos(self.__pos, action)
-        if (map_manager.can_move_to(next_pos) and next_pos != self.__banned_pos):
+        if (map_manager.is_pos_possible(next_pos) and next_pos != self.__banned_pos):
             self.__pos.copy(next_pos)
 
 class GameManager:
     
     def __init__(self, game_settings: GameSettings) -> None:
-        self.__map_manager: MapManager = MapManager(game_settings.map_size)
+        self.__map_manager: MapManager = MapManager(game_settings.map_size, game_settings.obstacles)
         self.__target: MovingEntity = MovingEntity(game_settings.target_start_pos, game_settings.target_action_selector, game_settings.target_next_pos_selector)
         self.__opponent: MovingEntity = MovingEntity(game_settings.opponent_start_pos, game_settings.opponent_action_selector, game_settings.opponent_next_pos_selector)
         self.__target.set_banned_pos(self.__opponent.get_pos())
@@ -76,6 +83,7 @@ class GameManager:
         self.__res: Result = Result.WaitingForResult
         while self.__res == Result.WaitingForResult:
             self.__next_iteration()
+            print(f"{self.__agent._Agent__state}")
         return self.__res
 
     def __next_iteration(self) -> None:
@@ -94,3 +102,77 @@ class GameManager:
             self.__res = Result.Fail
             return True
         return False
+
+class TrainManager:
+    
+    def __init__(self, train_settings: TrainSettings) -> None:
+        self.__map_manager: MapManager = MapManager(train_settings.map_size, train_settings.obstacles)
+        self.__policy_file_path: str = train_settings.policy_file_path
+        self.__reward: RewardFunction = train_settings.reward
+        self.__next_pos_selector: NextPosSelector = train_settings.agent_next_pos_selector
+        self.__iter: int = 0
+        self.__max_iter: int = train_settings.max_iter
+        map_size: MapSize = self.__map_manager.map_size
+        self.__policy = Policy()
+        self.__policy.fill(Action.Up, map_size.N3M3)
+        self.__changed_actions = map_size.N3M3
+        self.__value_function = ValueFunction()
+        self.__value_function.fill(0.0, map_size.N3M3)
+        self.__max_relative_value_diff: float = 0.0
+
+    def start(self) -> None:
+        while (not self.__check_stop_conditions()):
+            self.__changed_actions = 0
+            self.__max_relative_value_diff = 0.0
+            self.__next_iteration()
+            self.__iter += 1
+            print(f"Iteration {self.__iter}")
+            print(f"Changed {self.__changed_actions} actions")
+            print(f"Max relative value diff: {self.__max_relative_value_diff}")
+        self.__policy.write_to_file(self.__policy_file_path)
+        print(f"Convergence after {self.__iter} iterations")
+
+    def __check_stop_conditions(self) -> bool:
+        return self.__iter >= self.__max_iter or self.__changed_actions <= 0
+
+    def __next_iteration(self) -> None:
+        self.__update_value_function()
+        self.__update_policy()
+
+    def __update_value_function(self) -> None:
+        state: State = State() # first state is never possible target and opponent overlap
+        while not state.next_state(self.__map_manager.map_size):
+            if self.__map_manager.is_state_possible(state):
+                new_value: float = self.__calculate_new_value_function_value(state, self.__policy.get_action(state, self.__map_manager.map_size))
+                old_value: float = self.__value_function.get_value(state, self.__map_manager.map_size)
+                if old_value == 0 and new_value != 0:
+                        old_value = 1
+                if old_value != 0:
+                    relative_diff = abs(new_value - old_value) / old_value
+                    if relative_diff > self.__max_relative_value_diff:
+                        self.__max_relative_value_diff = relative_diff
+                self.__value_function.set_value(state, new_value, self.__map_manager.map_size)
+
+    def __calculate_new_value_function_value(self, state: State, chosen_action: Action) -> float:
+        actions: list[Action] = [Action(i) for i in range(Action.MaxExclusive.value)]
+        next_states: list[State] = [deepcopy(state) for action in actions]
+        for next_state, action in zip(next_states, actions):
+            self.__map_manager.move_if_possible(next_state.agent_pos, action)
+        next_states_values: list[float] = [self.__value_function.get_value(next_state, self.__map_manager.map_size) for next_state in next_states]
+        probabilities: list[float] = [self.__next_pos_selector.get_action_prob(chosen_action, action) for action in actions]
+        return (self.__reward.calculate_reward(next_states[chosen_action.value], self.__map_manager.map_size) +
+                sum([next_state_value * probability for next_state_value, probability in zip(next_states_values, probabilities)]))
+
+    def __update_policy(self) -> None:
+        state: State = State()
+        while not state.next_state(self.__map_manager.map_size):
+            if self.__map_manager.is_state_possible(state):
+                new_action: Action= self.__calculate_new_policy_action(state)
+                old_action: Action = self.__policy.get_action(state, self.__map_manager.map_size)
+                if new_action != old_action:
+                    self.__changed_actions += 1
+                    self.__policy.set_action(state, new_action, self.__map_manager.map_size)
+
+    def __calculate_new_policy_action(self, state: State) -> Action:
+        actions: list[Action] = [Action(i) for i in range(Action.MaxExclusive.value)]
+        return max(actions, key=lambda action: self.__calculate_new_value_function_value(state, action))

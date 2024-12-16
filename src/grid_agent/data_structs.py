@@ -24,6 +24,17 @@ class Vec2D:
         self.x = oth.x
         self.y = oth.y
 
+    def move(self, action: Action) -> None:
+        match action:
+            case Action.Up:
+                self.y += 1
+            case Action.Right:
+                self.x += 1
+            case Action.Down:
+                self.y -= 1
+            case Action.Left:
+                self.x = -1
+
 @dataclass
 class Obstacle:
     origin : Vec2D = field(default_factory=lambda: Vec2D())
@@ -79,6 +90,24 @@ class State:
         self.target_pos.x = (index % map_size.N3M2) // map_size.N2M2
         self.target_pos.y = index // map_size.N3M2
 
+    def next_state(self, map_size: MapSize) -> bool:
+        if self.__next_pos(self.agent_pos, map_size):
+            return False
+        if self.__next_pos(self.opponent_pos, map_size):
+            return False
+        return not self.__next_pos(self.target_pos, map_size)
+        
+    def __next_pos(self, pos: Vec2D, map_size: MapSize) -> bool:
+        pos.x += 1
+        if pos.x < map_size.N:
+            return True
+        pos.x = 0
+        pos.y += 1
+        if pos.y < map_size.M:
+            return True
+        pos.y = 0
+        return False
+
 @dataclass
 class Policy:
     __arr : array = field(default_factory=lambda: array("b"))
@@ -89,10 +118,14 @@ class Policy:
     def set_action(self, state: State, action: Action, map_size: MapSize) -> None:
         self.__arr[state.to_index(map_size)] = action.value
 
-    def load_from_file(self, policy_file_name: str, policy_size: int) -> None:
+    def read_from_file(self, policy_file_name: str, policy_size: int) -> None:
         self.__arr.clear()
         with open(policy_file_name, "rb") as f:
             self.__arr.fromfile(f, policy_size)
+
+    def write_to_file(self, policy_file_name: str) -> None:
+        with open(policy_file_name, "wb") as f:
+            self.__arr.tofile(f)
 
     def fill(self, action: Action, policy_size: int) -> None:
         self.__arr.clear()
@@ -101,6 +134,9 @@ class Policy:
 @dataclass
 class ValueFunction:
     __arr : array = field(default_factory=lambda: array("d"))
+
+    def fill(self, value: float, size: int):
+        self.__arr.fromlist([value for i in range(size)])
 
     def get_value(self, state: State, map_size: MapSize) -> float:
         return self.__arr[state.to_index(map_size)]
