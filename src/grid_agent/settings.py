@@ -93,7 +93,8 @@ class BaseSettings(ABC):
             return
         with open(settings_file_path) as f:
             for line in f.readlines():
-                self.__process_line(line)
+                if not line.isspace():
+                    self.__process_line(line)
     
     def __process_line(self, line: str) -> None:
         if line.startswith("#"):
@@ -197,8 +198,8 @@ class TrainSettings(BaseSettings):
         super().__init__(command_line_arguments)
 
     def _set_default_settings_helper(self) -> None:
-        self.policy_file_path = "policy.bin"
-        self.max_iter: int = 1000 
+        self.policy_file_path = "..\policies\policy.bin"
+        self.max_iter: int = 100
         self.reward: RewardFunction = STDRewardFunction()
     
     def _process_line_helper(self, splitted_line: list[str]) -> None:
