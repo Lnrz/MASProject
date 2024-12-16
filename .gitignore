@@ -13,3 +13,9 @@
 
 # Python cache folders
 __pycache__/
+
+# Binary files
+*.bin
+
+# Config files
+*.cfg
