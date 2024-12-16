@@ -16,6 +16,8 @@ __pycache__/
 
 # Binary files
 *.bin
+!policies/sample.bin
 
 # Config files
 *.cfg
+!configs/sample.cfg
