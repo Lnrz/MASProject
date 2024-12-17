@@ -1,6 +1,6 @@
 from grid_agent.entities import GameManager
 from grid_agent.settings import GameSettings, GameCommandLineArguments
-from grid_agent.view import ASCIIView
+from grid_agent.ascii_view import ASCIIView
 
 def main() -> None:
   game_settings: GameSettings = GameSettings(GameCommandLineArguments())

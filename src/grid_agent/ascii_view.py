@@ -1,9 +1,11 @@
-from grid_agent.data_structs import GameData, Obstacle, Vec2D, State, Action, Result
+from grid_agent.data_structs import GameData, Obstacle, Vec2D, Action, Result
 from typing import Callable
 from time import sleep
 
 class ASCIIView:
 
+    __void_char: str = " "
+    __unknown_char: str = "?"
     __free_space_char: str = "O"
     __obstacle_char: str = "X"
     __agent_char: str = "A"
@@ -11,6 +13,12 @@ class ASCIIView:
     __opponent_char: str = "E"
     __win_char: str = "W"
     __lose_char: str = "L"
+    __up_char: str = "^"
+    __right_char: str = ">"
+    __down_char: str = "v"
+    __left_char: str = "<"
+    __horizontal_border_char: str = "="
+    __vertical_border_char: str = "|"
     __grid_horizontal_factor: int = 5
     __grid_horizontal_shift: int = 2
     __grid_vertical_factor: int = 3
@@ -18,7 +26,7 @@ class ASCIIView:
 
     def __init__(self, map_size: Vec2D, obstacles: list[Obstacle]) -> None:
         self.__grid_size: Vec2D = Vec2D(self.__grid_horizontal_factor * map_size.x, self.__grid_vertical_factor * map_size.y)
-        self.__grid: list[str] = [" " for i in range(self.__grid_size.x * self.__grid_size.y)]
+        self.__grid: list[str] = [self.__void_char for i in range(self.__grid_size.x * self.__grid_size.y)]
         self.__gamedatas: list[GameData] = list[GameData]()
         self.__result: Result = Result.WAITING_FOR_RESULT
         self.__add_free_space(map_size)
@@ -84,9 +92,9 @@ class ASCIIView:
             self.__grid[self.__pos_to_grid_index(last_gamedata.state.agent_pos)] = self.__free_space_char
             self.__grid[self.__pos_to_grid_index(last_gamedata.state.target_pos)] = self.__free_space_char
             self.__grid[self.__pos_to_grid_index(last_gamedata.state.opponent_pos)] = self.__free_space_char
-            self.__grid[self.__action_to_grid_index(last_gamedata.state.agent_pos, last_gamedata.agent_action)] = " "
-            self.__grid[self.__action_to_grid_index(last_gamedata.state.target_pos, last_gamedata.target_action)] = " "
-            self.__grid[self.__action_to_grid_index(last_gamedata.state.opponent_pos, last_gamedata.opponent_action)] = " "
+            self.__grid[self.__action_to_grid_index(last_gamedata.state.agent_pos, last_gamedata.agent_action)] = self.__void_char
+            self.__grid[self.__action_to_grid_index(last_gamedata.state.target_pos, last_gamedata.target_action)] = self.__void_char
+            self.__grid[self.__action_to_grid_index(last_gamedata.state.opponent_pos, last_gamedata.opponent_action)] = self.__void_char
         if gamedata.state.agent_pos == gamedata.state.target_pos:
             self.__grid[self.__pos_to_grid_index(gamedata.state.agent_pos)] = self.__win_char
             self.__grid[self.__pos_to_grid_index(gamedata.state.opponent_pos)] = self.__opponent_char
@@ -120,21 +128,21 @@ class ASCIIView:
     def __get_action_character(self, action: Action) -> str:
         match action:
             case Action.UP:
-                return "^"
+                return self.__up_char
             case Action.RIGHT:
-                return ">"
+                return self.__right_char
             case Action.DOWN:
-                return "v"
+                return self.__down_char
             case Action.LEFT:
-                return "<"
+                return self.__left_char
             case _:
-                return "?"
+                return self.__unknown_char
 
     def __print_grid(self) -> None:
-        print("=" * (self.__grid_size.x + 2))
+        print(self.__horizontal_border_char * (self.__grid_size.x + 2))
         for i in range(self.__grid_size.y):
             start_index: int = i * self.__grid_size.x
             end_index: int = start_index + self.__grid_size.x
             line: str = "".join(self.__grid[start_index : end_index])
-            print("|" + line + "|")
-        print("=" * (self.__grid_size.x + 2))
+            print(self.__vertical_border_char + line + self.__vertical_border_char)
+        print(self.__horizontal_border_char * (self.__grid_size.x + 2))
