@@ -29,7 +29,7 @@ class NextPosSelector(ABC):
 
 class STDNextPosSelector(NextPosSelector):
 
-    __action_distribution: list[float] = [0.8, 0.1, 0.0, 0.1]
+    __action_distribution: list[float] = [0.9, 0.05, 0.0, 0.05]
 
     def get_next_pos(self, pos: Vec2D, action: Action) -> Vec2D:
         next_pos: Vec2D = copy(pos)
@@ -47,10 +47,19 @@ class RewardFunction(ABC):
     def calculate_reward(self, next_state: State, map_size: MapSize) -> float:
         ...
 
+class STDRewardFunction(RewardFunction):
+
+    def calculate_reward(self, next_state: State, map_size: MapSize) -> float:
+        if next_state.agent_pos == next_state.target_pos:
+            return 1
+        if next_state.agent_pos == next_state.opponent_pos:
+            return -1
+        return -0.05
+
 def manhattan_distance(v1: Vec2D, v2: Vec2D) -> int:
     return abs(v1.x - v2.x) + abs(v1.y - v2.y)
-
-class STDRewardFunction(RewardFunction):
+    
+class ExpRewardFunction(RewardFunction):
 
     def calculate_reward(self, next_state: State, map_size: MapSize) -> float:
         target_dist: int = manhattan_distance(next_state.agent_pos, next_state.target_pos)

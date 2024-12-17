@@ -2,6 +2,7 @@ from grid_agent.data_structs import State, Policy, MapSize, Obstacle, Vec2D, Act
 from grid_agent.functors import ActionSelector, NextPosSelector, RewardFunction
 from grid_agent.settings import GameSettings, TrainSettings
 from typing import Callable
+from array import array
 from copy import copy, deepcopy
 
 class MapManager:
@@ -133,22 +134,31 @@ class TrainManager:
         self.__actions_probabilities: list[float] = [0.0 for i in self.__actions]
         self.__next_states: list[State] = [State() for i in self.__actions]
         self.__next_states_values: list[float] = [0.0 for i in self.__actions]
-        self.__policy = Policy()
+        self.__possible_states_indices: array = array("Q")
+        self.__possible_states_num: int = 0
+        self.__state: State = State()
+        while (not self.__state.next_state(self.__map_manager.map_size)):
+            if self.__map_manager.is_state_possible(self.__state):
+                self.__possible_states_indices.append(self.__state.to_index(self.__map_manager.map_size))
+                self.__possible_states_num += 1
+        self.__policy: Policy = Policy()
         self.__policy.fill(Action.Up, map_size.N3M3)
-        self.__changed_actions = map_size.N3M3
+        self.__changed_actions: int = map_size.N3M3
+        self.__percentage_of_changed_actions: float = 1.0
         self.__value_function = ValueFunction()
         self.__value_function.fill(0.0, map_size.N3M3)
-        self.__max_relative_value_diff: float = 0.0
+        self.__mean_value: float = 0.0
 
     def start(self) -> None:
         while (not self.__check_stop_conditions()):
             self.__changed_actions = 0
-            self.__max_relative_value_diff = 0.0
+            self.__mean_value = 0.0
             self.__next_iteration()
             self.__iter += 1
             print(f"Iteration {self.__iter}")
             print(f"Changed {self.__changed_actions} actions")
-            print(f"Max relative value diff: {self.__max_relative_value_diff}")
+            print(f"Changed {self.__percentage_of_changed_actions} of actions")
+            print(f"Mean value: {self.__mean_value}")
         self.__policy.write_to_file(self.__policy_file_path)
         print(f"Convergence after {self.__iter} iterations")
 
@@ -160,37 +170,50 @@ class TrainManager:
         self.__update_policy()
 
     def __update_value_function(self) -> None:
-        state: State = State() # first state is never possible target and opponent overlap
-        while not state.next_state(self.__map_manager.map_size):
-            if self.__map_manager.is_state_possible(state):
-                new_value: float = self.__calculate_new_value_function_value(state, self.__policy.get_action(state, self.__map_manager.map_size))
-                old_value: float = self.__value_function.get_value(state, self.__map_manager.map_size)
-                if old_value == 0 and new_value != 0:
-                        old_value = 1
-                if old_value != 0:
-                    relative_diff = abs(new_value - old_value) / old_value
-                    if relative_diff > self.__max_relative_value_diff:
-                        self.__max_relative_value_diff = relative_diff
-                self.__value_function.set_value(state, new_value, self.__map_manager.map_size)
+        j: int = 0
+        while j < self.__possible_states_num:
+            self.__state.from_index(self.__possible_states_indices[j], self.__map_manager.map_size)
+            new_value: float = self.__calculate_new_value_function_value(self.__state, self.__policy.get_action(self.__state, self.__map_manager.map_size))
+            self.__mean_value += new_value
+            self.__value_function.set_value(self.__state, new_value, self.__map_manager.map_size)
+            j += 1
+        self.__mean_value /= self.__possible_states_num
 
     def __calculate_new_value_function_value(self, state: State, chosen_action: Action) -> float:
         for next_state, action in zip(self.__next_states, self.__actions):
             next_state.copy(state)
-            self.__map_manager.move_if_possible(next_state.agent_pos, action)
+            next_state.agent_pos.move(action)
+            if not self.__binary_search_index(next_state.to_index(self.__map_manager.map_size)):
+                next_state.copy(state)
             self.__next_states_values[action.value] = self.__value_function.get_value(next_state, self.__map_manager.map_size)
             self.__actions_probabilities[action.value] = self.__next_pos_selector.get_action_prob(chosen_action, action)
         return (self.__reward.calculate_reward(self.__next_states[chosen_action.value], self.__map_manager.map_size) +
                 sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
 
+    def __binary_search_index(self, state_idx: int) -> bool:
+        i: int = 0
+        j: int = self.__possible_states_num - 1
+        while i < j:
+            k: int = (i + j) // 2
+            idx: int = self.__possible_states_indices[k]
+            if idx == state_idx:
+                return True
+            if idx < state_idx:
+                i = k + 1
+            else:
+                j = k - 1
+
     def __update_policy(self) -> None:
-        state: State = State()
-        while not state.next_state(self.__map_manager.map_size):
-            if self.__map_manager.is_state_possible(state):
-                new_action: Action= self.__calculate_new_policy_action(state)
-                old_action: Action = self.__policy.get_action(state, self.__map_manager.map_size)
-                if new_action != old_action:
-                    self.__changed_actions += 1
-                    self.__policy.set_action(state, new_action, self.__map_manager.map_size)
+        j: int = 0
+        while j < self.__possible_states_num:
+            self.__state.from_index(self.__possible_states_indices[j], self.__map_manager.map_size)
+            new_action: Action= self.__calculate_new_policy_action(self.__state)
+            old_action: Action = self.__policy.get_action(self.__state, self.__map_manager.map_size)
+            if new_action != old_action:
+                self.__changed_actions += 1
+                self.__policy.set_action(self.__state, new_action, self.__map_manager.map_size)
+            j += 1
+        self.__percentage_of_changed_actions = self.__changed_actions / self.__possible_states_num
 
     def __calculate_new_policy_action(self, state: State) -> Action:
         return max(self.__actions, key=lambda action: self.__calculate_new_value_function_value(state, action))
