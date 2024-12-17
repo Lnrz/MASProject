@@ -107,6 +107,11 @@ class State:
             return True
         pos.y = 0
         return False
+    
+    def copy(self, oth: Self) -> None:
+        self.agent_pos.copy(oth.agent_pos)
+        self.target_pos.copy(oth.target_pos)
+        self.opponent_pos.copy(oth.opponent_pos)
 
 @dataclass
 class GameData:

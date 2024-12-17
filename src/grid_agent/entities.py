@@ -9,12 +9,13 @@ class MapManager:
     def __init__(self, map_size: Vec2D, obstacles: list[Obstacle]) -> None:
         self.map_size: MapSize = MapSize(map_size.x, map_size.y)
         self.__obstacles: list[Obstacle] = obstacles
+        self.__pos : Vec2D = Vec2D()
 
     def move_if_possible(self, pos: Vec2D, action: Action) -> None:
-        next_pos: Vec2D = copy(pos)
-        next_pos.move(action)
-        if self.is_pos_possible(next_pos):
-            pos.copy(next_pos)
+        self.__pos.copy(pos)
+        self.__pos.move(action)
+        if self.is_pos_possible(self.__pos):
+            pos.copy(self.__pos)
 
     def is_state_possible(self, state: State) -> bool:
         return (self.is_pos_possible(state.agent_pos) and self.is_pos_possible(state.target_pos) and self.is_pos_possible(state.opponent_pos) and
@@ -128,6 +129,7 @@ class TrainManager:
         self.__iter: int = 0
         self.__max_iter: int = train_settings.max_iter
         map_size: MapSize = self.__map_manager.map_size
+        self.__next_states: list[State] = [State() for i in range(Action.MaxExclusive.value)]
         self.__policy = Policy()
         self.__policy.fill(Action.Up, map_size.N3M3)
         self.__changed_actions = map_size.N3M3
@@ -170,12 +172,12 @@ class TrainManager:
 
     def __calculate_new_value_function_value(self, state: State, chosen_action: Action) -> float:
         actions: list[Action] = [Action(i) for i in range(Action.MaxExclusive.value)]
-        next_states: list[State] = [deepcopy(state) for action in actions]
-        for next_state, action in zip(next_states, actions):
+        for next_state, action in zip(self.__next_states, actions):
+            next_state.copy(state)
             self.__map_manager.move_if_possible(next_state.agent_pos, action)
-        next_states_values: list[float] = [self.__value_function.get_value(next_state, self.__map_manager.map_size) for next_state in next_states]
+        next_states_values: list[float] = [self.__value_function.get_value(next_state, self.__map_manager.map_size) for next_state in self.__next_states]
         probabilities: list[float] = [self.__next_pos_selector.get_action_prob(chosen_action, action) for action in actions]
-        return (self.__reward.calculate_reward(next_states[chosen_action.value], self.__map_manager.map_size) +
+        return (self.__reward.calculate_reward(self.__next_states[chosen_action.value], self.__map_manager.map_size) +
                 sum([next_state_value * probability for next_state_value, probability in zip(next_states_values, probabilities)]))
 
     def __update_policy(self) -> None:
