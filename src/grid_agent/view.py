@@ -20,7 +20,7 @@ class ASCIIView:
         self.__grid_size: Vec2D = Vec2D(self.__grid_horizontal_factor * map_size.x, self.__grid_vertical_factor * map_size.y)
         self.__grid: list[str] = [" " for i in range(self.__grid_size.x * self.__grid_size.y)]
         self.__gamedatas: list[GameData] = list[GameData]()
-        self.__result: Result = Result.WaitingForResult
+        self.__result: Result = Result.WAITING_FOR_RESULT
         self.__add_free_space(map_size)
         self.__add_obstacles(obstacles)
 
@@ -34,11 +34,11 @@ class ASCIIView:
             self.__print_grid()
             last_gamedata = gamedata
             match self.__result:
-                case Result.WaitingForResult:
+                case Result.WAITING_FOR_RESULT:
                     input("Press 'Enter' to continue")
-                case Result.Success:
+                case Result.SUCCESS:
                     print("Win!")
-                case Result.Fail:
+                case Result.FAIL:
                     print("Lost")
 
     def start_auto(self, time_interval: float) -> None:
@@ -48,11 +48,11 @@ class ASCIIView:
             self.__print_grid()
             last_gamedata = gamedata
             match self.__result:
-                case Result.WaitingForResult:
+                case Result.WAITING_FOR_RESULT:
                     sleep(time_interval)
-                case Result.Success:
+                case Result.SUCCESS:
                     print("Win!")
-                case Result.Fail:
+                case Result.FAIL:
                     print("Lost")
 
     def __add_free_space(self, map_size: Vec2D) -> None:
@@ -90,12 +90,12 @@ class ASCIIView:
         if gamedata.state.agent_pos == gamedata.state.target_pos:
             self.__grid[self.__pos_to_grid_index(gamedata.state.agent_pos)] = self.__win_char
             self.__grid[self.__pos_to_grid_index(gamedata.state.opponent_pos)] = self.__opponent_char
-            self.__result = Result.Success
+            self.__result = Result.SUCCESS
             return
         if gamedata.state.agent_pos == gamedata.state.opponent_pos:
             self.__grid[self.__pos_to_grid_index(gamedata.state.agent_pos)] = self.__lose_char
             self.__grid[self.__pos_to_grid_index(gamedata.state.target_pos)] = self.__target_char
-            self.__result = Result.Fail
+            self.__result = Result.FAIL
             return
         self.__grid[self.__pos_to_grid_index(gamedata.state.agent_pos)] = self.__agent_char
         self.__grid[self.__pos_to_grid_index(gamedata.state.target_pos)] = self.__target_char
@@ -107,25 +107,25 @@ class ASCIIView:
     def __action_to_grid_index(self, pos: Vec2D, action: Action) -> int:
         index: int = self.__pos_to_grid_index(pos)
         match action:
-            case Action.Up:
+            case Action.UP:
                 index -= self.__grid_size.x
-            case Action.Right:
+            case Action.RIGHT:
                 index += 2
-            case Action.Down:
+            case Action.DOWN:
                 index += self.__grid_size.x
-            case Action.Left:
+            case Action.LEFT:
                 index -= 2
         return index
 
     def __get_action_character(self, action: Action) -> str:
         match action:
-            case Action.Up:
+            case Action.UP:
                 return "^"
-            case Action.Right:
+            case Action.RIGHT:
                 return ">"
-            case Action.Down:
+            case Action.DOWN:
                 return "v"
-            case Action.Left:
+            case Action.LEFT:
                 return "<"
 
     def __print_grid(self) -> None:

@@ -43,7 +43,7 @@ class Agent:
             self.__policy.read_from_file(policy_file_name, map_size.N3M3)
         else:
             print("WARNING: The policy file was not provided, using default policy")
-            self.__policy.fill(Action.Up, map_size.N3M3)
+            self.__policy.fill(Action.UP, map_size.N3M3)
         self.__next_pos_selector: MarkovTransitionDensity = next_pos_selector
 
     def get_state(self) -> State:
@@ -59,7 +59,7 @@ class Agent:
         return chosen_action
     
     def __get_next_action(self, chosen_action: Action) -> Action:
-        actions: list[Action] = [Action(i) for i in range(Action.MaxExclusive.value)]
+        actions: list[Action] = [Action(i) for i in range(Action.MAX_EXCLUSIVE.value)]
         probabilities: list[float] = [self.__next_pos_selector(chosen_action, action) for action in actions]
         return rnd.choices(actions, probabilities)[0]
 
@@ -86,7 +86,7 @@ class MovingEntity:
         return chosen_action
     
     def __get_next_action(self, chosen_action: Action) -> Action:
-        actions: list[Action] = [Action(i) for i in range(Action.MaxExclusive.value)]
+        actions: list[Action] = [Action(i) for i in range(Action.MAX_EXCLUSIVE.value)]
         probabilities: list[float] = [self.__next_pos_selector(chosen_action, action) for action in actions]
         return rnd.choices(actions, probabilities)[0]
 
@@ -108,8 +108,8 @@ class GameManager:
         self.__callback = callback
 
     def start(self) -> Result:
-        self.__res: Result = Result.WaitingForResult
-        while self.__res == Result.WaitingForResult:
+        self.__res: Result = Result.WAITING_FOR_RESULT
+        while self.__res == Result.WAITING_FOR_RESULT:
             self.__gamedata.state = deepcopy(self.__agent.get_state())
             self.__next_iteration()
             self.__callback(deepcopy(self.__gamedata))
@@ -128,10 +128,10 @@ class GameManager:
 
     def __check_for_result(self) -> bool:
         if self.__agent.get_pos() == self.__target.get_pos():
-            self.__res = Result.Success
+            self.__res = Result.SUCCESS
             return True
         if self.__agent.get_pos() == self.__opponent.get_pos():
-            self.__res = Result.Fail
+            self.__res = Result.FAIL
             return True
         return False
 
@@ -147,7 +147,7 @@ class TrainManager:
         self.__iter: int = 0
         self.__max_iter: int = train_settings.max_iter
         map_size: MapSize = self.__map_manager.map_size
-        self.__actions: list[Action] = [Action(i) for i in range(Action.MaxExclusive.value)]
+        self.__actions: list[Action] = [Action(i) for i in range(Action.MAX_EXCLUSIVE.value)]
         self.__actions_probabilities: list[float] = [0.0 for i in self.__actions]
         self.__next_states: list[State] = [State() for i in self.__actions]
         self.__next_states_values: list[float] = [0.0 for i in self.__actions]
@@ -159,7 +159,7 @@ class TrainManager:
                 self.__possible_states_indices.append(self.__state.to_index(self.__map_manager.map_size))
                 self.__possible_states_num += 1
         self.__policy: Policy = Policy()
-        self.__policy.fill(Action.Up, map_size.N3M3)
+        self.__policy.fill(Action.UP, map_size.N3M3)
         self.__changed_actions: int = map_size.N3M3
         self.__percentage_of_changed_actions: float = 1.0
         self.__value_function = ValueFunction()

@@ -12,7 +12,7 @@ class ActionSelector(ABC):
 class SimpleActionSelector(ActionSelector):
 
     def __call__(self) -> Action:
-        return Action(rnd.randrange(Action.MaxExclusive))
+        return Action(rnd.randrange(Action.MAX_EXCLUSIVE))
 
 
 
@@ -27,7 +27,7 @@ class SimpleMarkovTransitionDensity(MarkovTransitionDensity):
     __action_distribution: list[float] = [0.9, 0.05, 0.0, 0.05]
 
     def __call__(self, chosen_action: Action, action: Action) -> float:
-        return self.__action_distribution[(action.value - chosen_action.value) % Action.MaxExclusive.value]
+        return self.__action_distribution[(action.value - chosen_action.value) % Action.MAX_EXCLUSIVE.value]
 
 
 

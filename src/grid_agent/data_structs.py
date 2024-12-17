@@ -4,16 +4,16 @@ from array import array
 from typing import Self
 
 class Result(IntEnum):
-    Fail = 0,
-    Success = 1,
-    WaitingForResult = 2
+    FAIL = 0,
+    SUCCESS = 1,
+    WAITING_FOR_RESULT = 2
 
 class Action(IntEnum):
-    Up = 0
-    Right = 1
-    Down = 2
-    Left = 3
-    MaxExclusive = Left + 1
+    UP = 0
+    RIGHT = 1
+    DOWN = 2
+    LEFT = 3
+    MAX_EXCLUSIVE = LEFT + 1
 
 @dataclass
 class Vec2D:
@@ -26,24 +26,24 @@ class Vec2D:
 
     def move(self, action: Action) -> None:
         match action:
-            case Action.Up:
+            case Action.UP:
                 self.y += 1
-            case Action.Right:
+            case Action.RIGHT:
                 self.x += 1
-            case Action.Down:
+            case Action.DOWN:
                 self.y -= 1
-            case Action.Left:
+            case Action.LEFT:
                 self.x -= 1
     
     def undo(self, action: Action) -> None:
         match action:
-            case Action.Up:
+            case Action.UP:
                 self.y -= 1
-            case Action.Right:
+            case Action.RIGHT:
                 self.x -= 1
-            case Action.Down:
+            case Action.DOWN:
                 self.y += 1
-            case Action.Left:
+            case Action.LEFT:
                 self.x += 1
 
 @dataclass
