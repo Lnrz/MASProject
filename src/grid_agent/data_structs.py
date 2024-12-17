@@ -33,7 +33,18 @@ class Vec2D:
             case Action.Down:
                 self.y -= 1
             case Action.Left:
-                self.x = -1
+                self.x -= 1
+    
+    def undo(self, action: Action) -> None:
+        match action:
+            case Action.Up:
+                self.y -= 1
+            case Action.Right:
+                self.x -= 1
+            case Action.Down:
+                self.y += 1
+            case Action.Left:
+                self.x += 1
 
 @dataclass
 class Obstacle:

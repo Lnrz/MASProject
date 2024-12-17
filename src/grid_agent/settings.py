@@ -1,5 +1,5 @@
 from grid_agent.data_structs import Vec2D, Obstacle
-from grid_agent.functors import ActionSelector, STDActionSelector, NextPosSelector, STDNextPosSelector, RewardFunction, STDRewardFunction
+from grid_agent.functors import ActionSelector, SimpleActionSelector, MarkovTransitionDensity, SimpleMarkovTransitionDensity, RewardFunction, SimpleRewardFunction
 from abc import ABC, abstractmethod
 import argparse
 import re
@@ -80,7 +80,7 @@ class BaseSettings(ABC):
         self.policy_file_path: str | None = None
         self.map_size: Vec2D = Vec2D(3, 3)
         self.obstacles: list[Obstacle] = list[Obstacle]()
-        self.agent_next_pos_selector: NextPosSelector = STDNextPosSelector()
+        self.agent_next_pos_selector: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
         self._set_default_settings_helper()
 
     @abstractmethod
@@ -149,10 +149,10 @@ class GameSettings(BaseSettings):
         self.agent_start_pos: Vec2D = Vec2D(0, 0)
         self.target_start_pos: Vec2D = Vec2D(2, 2)
         self.opponent_start_pos: Vec2D = Vec2D(2, 0)
-        self.target_action_selector: ActionSelector = STDActionSelector()
-        self.opponent_action_selector: ActionSelector = STDActionSelector()
-        self.target_next_pos_selector: NextPosSelector = STDNextPosSelector()
-        self.opponent_next_pos_selector: NextPosSelector = STDNextPosSelector()
+        self.target_action_selector: ActionSelector = SimpleActionSelector()
+        self.opponent_action_selector: ActionSelector = SimpleActionSelector()
+        self.target_next_pos_selector: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
+        self.opponent_next_pos_selector: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
     
     def _process_line_helper(self, splitted_line: list[str]) -> None:
         match splitted_line:
@@ -200,7 +200,7 @@ class TrainSettings(BaseSettings):
     def _set_default_settings_helper(self) -> None:
         self.policy_file_path = "..\policies\policy.bin"
         self.max_iter: int = 100
-        self.reward: RewardFunction = STDRewardFunction()
+        self.reward: RewardFunction = SimpleRewardFunction()
     
     def _process_line_helper(self, splitted_line: list[str]) -> None:
         match splitted_line:
