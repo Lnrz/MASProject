@@ -132,6 +132,13 @@ class GameData:
     opponent_action: Action | None = None
 
 @dataclass
+class TrainData:
+    iteration_number: int = 0
+    mean_value: float = 0.0
+    changed_actions_number: int = 0
+    changed_actions_percentage: float = 0.0
+
+@dataclass
 class Policy:
     __arr : array = field(default_factory=lambda: array("b"))
 
