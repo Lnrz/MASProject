@@ -129,7 +129,10 @@ class TrainManager:
         self.__iter: int = 0
         self.__max_iter: int = train_settings.max_iter
         map_size: MapSize = self.__map_manager.map_size
-        self.__next_states: list[State] = [State() for i in range(Action.MaxExclusive.value)]
+        self.__actions: list[Action] = [Action(i) for i in range(Action.MaxExclusive.value)]
+        self.__actions_probabilities: list[float] = [0.0 for i in self.__actions]
+        self.__next_states: list[State] = [State() for i in self.__actions]
+        self.__next_states_values: list[float] = [0.0 for i in self.__actions]
         self.__policy = Policy()
         self.__policy.fill(Action.Up, map_size.N3M3)
         self.__changed_actions = map_size.N3M3
@@ -171,14 +174,13 @@ class TrainManager:
                 self.__value_function.set_value(state, new_value, self.__map_manager.map_size)
 
     def __calculate_new_value_function_value(self, state: State, chosen_action: Action) -> float:
-        actions: list[Action] = [Action(i) for i in range(Action.MaxExclusive.value)]
-        for next_state, action in zip(self.__next_states, actions):
+        for next_state, action in zip(self.__next_states, self.__actions):
             next_state.copy(state)
             self.__map_manager.move_if_possible(next_state.agent_pos, action)
-        next_states_values: list[float] = [self.__value_function.get_value(next_state, self.__map_manager.map_size) for next_state in self.__next_states]
-        probabilities: list[float] = [self.__next_pos_selector.get_action_prob(chosen_action, action) for action in actions]
+            self.__next_states_values[action.value] = self.__value_function.get_value(next_state, self.__map_manager.map_size)
+            self.__actions_probabilities[action.value] = self.__next_pos_selector.get_action_prob(chosen_action, action)
         return (self.__reward.calculate_reward(self.__next_states[chosen_action.value], self.__map_manager.map_size) +
-                sum([next_state_value * probability for next_state_value, probability in zip(next_states_values, probabilities)]))
+                sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
 
     def __update_policy(self) -> None:
         state: State = State()
@@ -191,5 +193,4 @@ class TrainManager:
                     self.__policy.set_action(state, new_action, self.__map_manager.map_size)
 
     def __calculate_new_policy_action(self, state: State) -> Action:
-        actions: list[Action] = [Action(i) for i in range(Action.MaxExclusive.value)]
-        return max(actions, key=lambda action: self.__calculate_new_value_function_value(state, action))
+        return max(self.__actions, key=lambda action: self.__calculate_new_value_function_value(state, action))
