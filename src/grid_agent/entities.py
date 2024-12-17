@@ -36,7 +36,7 @@ class MapManager:
 
 class Agent:
     
-    def __init__(self, start_pos: Vec2D, target_pos: Vec2D, opponent_pos: Vec2D, next_pos_selector: MarkovTransitionDensity, policy_file_name: str | None, map_size: MapSize) -> None:
+    def __init__(self, start_pos: Vec2D, target_pos: Vec2D, opponent_pos: Vec2D, markov_transition_density: MarkovTransitionDensity, policy_file_name: str | None, map_size: MapSize) -> None:
         self.__state: State = State(agent_pos=copy(start_pos), opponent_pos=opponent_pos, target_pos=target_pos)
         self.__policy: Policy = Policy()
         if policy_file_name:
@@ -44,7 +44,7 @@ class Agent:
         else:
             print("WARNING: The policy file was not provided, using default policy")
             self.__policy.fill(Action.UP, map_size.N3M3)
-        self.__next_pos_selector: MarkovTransitionDensity = next_pos_selector
+        self.__markov_transition_density: MarkovTransitionDensity = markov_transition_density
 
     def get_state(self) -> State:
         return self.__state
@@ -60,22 +60,22 @@ class Agent:
     
     def __get_next_action(self, chosen_action: Action) -> Action:
         actions: list[Action] = [Action(i) for i in range(Action.MAX_EXCLUSIVE.value)]
-        probabilities: list[float] = [self.__next_pos_selector(chosen_action, action) for action in actions]
+        probabilities: list[float] = [self.__markov_transition_density(chosen_action, action) for action in actions]
         return rnd.choices(actions, probabilities)[0]
 
 class MovingEntity:
     
-    def __init__(self, start_pos: Vec2D, action_selector: ActionSelector, next_pos_selector: MarkovTransitionDensity) -> None:
+    def __init__(self, start_pos: Vec2D, action_selector: ActionSelector, markov_transition_density: MarkovTransitionDensity) -> None:
         self.__pos: Vec2D = copy(start_pos)
         self.__action_selector: ActionSelector = action_selector
-        self.__next_pos_selector: MarkovTransitionDensity = next_pos_selector
+        self.__markov_transition_density: MarkovTransitionDensity = markov_transition_density
         self.__banned_pos: Vec2D = Vec2D(-1, -1)
 
     def get_pos(self) -> Vec2D:
         return self.__pos
 
     def set_banned_pos(self, banned_pos: Vec2D) -> None:
-        self.__banned_pos: Vec2D = banned_pos
+        self.__banned_pos = banned_pos
 
     def move(self, map_manager: MapManager) -> Action:
         chosen_action: Action = self.__action_selector()
@@ -87,7 +87,7 @@ class MovingEntity:
     
     def __get_next_action(self, chosen_action: Action) -> Action:
         actions: list[Action] = [Action(i) for i in range(Action.MAX_EXCLUSIVE.value)]
-        probabilities: list[float] = [self.__next_pos_selector(chosen_action, action) for action in actions]
+        probabilities: list[float] = [self.__markov_transition_density(chosen_action, action) for action in actions]
         return rnd.choices(actions, probabilities)[0]
 
 
@@ -96,11 +96,11 @@ class GameManager:
     
     def __init__(self, game_settings: GameSettings) -> None:
         self.__map_manager: MapManager = MapManager(game_settings.map_size, game_settings.obstacles)
-        self.__target: MovingEntity = MovingEntity(game_settings.target_start_pos, game_settings.target_action_selector, game_settings.target_next_pos_selector)
-        self.__opponent: MovingEntity = MovingEntity(game_settings.opponent_start_pos, game_settings.opponent_action_selector, game_settings.opponent_next_pos_selector)
+        self.__target: MovingEntity = MovingEntity(game_settings.target_start_pos, game_settings.target_action_selector, game_settings.target_markov_transition_density)
+        self.__opponent: MovingEntity = MovingEntity(game_settings.opponent_start_pos, game_settings.opponent_action_selector, game_settings.opponent_markov_transition_density)
         self.__target.set_banned_pos(self.__opponent.get_pos())
         self.__opponent.set_banned_pos(self.__target.get_pos())
-        self.__agent: Agent = Agent(game_settings.agent_start_pos, self.__target.get_pos(), self.__opponent.get_pos(), game_settings.agent_next_pos_selector, game_settings.policy_file_path, self.__map_manager.map_size)
+        self.__agent: Agent = Agent(game_settings.agent_start_pos, self.__target.get_pos(), self.__opponent.get_pos(), game_settings.agent_markov_transition_density, game_settings.policy_file_path, self.__map_manager.map_size)
         self.__gamedata: GameData = GameData()
         self.__callback: Callable[[GameData], None] = lambda g: None
 
@@ -143,8 +143,9 @@ class TrainManager:
         self.__map_manager: MapManager = MapManager(train_settings.map_size, train_settings.obstacles)
         self.__policy_file_path: str = train_settings.policy_file_path
         self.__reward: RewardFunction = train_settings.reward
-        self.__next_pos_selector: MarkovTransitionDensity = train_settings.agent_next_pos_selector
-        self.__iter: int = 0
+        self.__markov_transition_density: MarkovTransitionDensity = train_settings.agent_markov_transition_density
+        self.__traindata: TrainData = TrainData()
+        self.__callback: Callable[[TrainData], None] = lambda t: None
         self.__max_iter: int = train_settings.max_iter
         map_size: MapSize = self.__map_manager.map_size
         self.__actions: list[Action] = [Action(i) for i in range(Action.MAX_EXCLUSIVE.value)]
@@ -162,25 +163,23 @@ class TrainManager:
         self.__policy.fill(Action.UP, map_size.N3M3)
         self.__value_function = ValueFunction()
         self.__value_function.fill(0.0, map_size.N3M3)
-        self.__traindata: TrainData = TrainData()
-        self.__callback: Callable[[TrainData], None] = lambda t: None
 
-    def set_callback(self, callback: Callable[[TrainData], None]) -> None:
+    def register_callback(self, callback: Callable[[TrainData], None]) -> None:
         self.__callback = callback
 
     def start(self) -> None:
         while (not self.__check_stop_conditions()):
-            self.__iter += 1
             self.__prepare_traindata()
             self.__next_iteration()
             self.__callback(copy(self.__traindata))
         self.__policy.write_to_file(self.__policy_file_path)
 
     def __check_stop_conditions(self) -> bool:
-        return self.__iter >= self.__max_iter or self.__changed_actions <= 0
+        return (self.__traindata.iteration_number >= self.__max_iter or
+                self.__traindata.changed_actions_number <= 0)
 
     def __prepare_traindata(self) -> None:
-        self.__traindata.iteration_number = self.__iter
+        self.__traindata.iteration_number += 1
         self.__traindata.changed_actions_number = 0
         self.__traindata.mean_value = 0
 
@@ -205,7 +204,7 @@ class TrainManager:
             if not self.__binary_search_index(next_state.to_index(self.__map_manager.map_size)):
                 next_state.copy(state)
             self.__next_states_values[action.value] = self.__value_function.get_value(next_state, self.__map_manager.map_size)
-            self.__actions_probabilities[action.value] = self.__next_pos_selector(chosen_action, action)
+            self.__actions_probabilities[action.value] = self.__markov_transition_density(chosen_action, action)
         return (self.__reward(self.__next_states[chosen_action.value], self.__map_manager.map_size) +
                 sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
 
@@ -221,6 +220,7 @@ class TrainManager:
                 i = k + 1
             else:
                 j = k - 1
+        return False
 
     def __update_policy(self) -> None:
         j: int = 0

@@ -127,6 +127,8 @@ class ASCIIView:
                 return "v"
             case Action.LEFT:
                 return "<"
+            case _:
+                return "?"
 
     def __print_grid(self) -> None:
         print("=" * (self.__grid_size.x + 2))

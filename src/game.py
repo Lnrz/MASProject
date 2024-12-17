@@ -2,7 +2,7 @@ from grid_agent.entities import GameManager
 from grid_agent.settings import GameSettings, GameCommandLineArguments
 from grid_agent.view import ASCIIView
 
-def main(): 
+def main() -> None:
   game_settings: GameSettings = GameSettings(GameCommandLineArguments())
   game_manager: GameManager = GameManager(game_settings)
   viewer: ASCIIView = ASCIIView(game_settings.map_size, game_settings.obstacles)

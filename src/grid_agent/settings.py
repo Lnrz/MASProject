@@ -80,7 +80,7 @@ class BaseSettings(ABC):
         self.policy_file_path: str | None = None
         self.map_size: Vec2D = Vec2D(3, 3)
         self.obstacles: list[Obstacle] = list[Obstacle]()
-        self.agent_next_pos_selector: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
+        self.agent_markov_transition_density: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
         self._set_default_settings_helper()
 
     @abstractmethod
@@ -151,8 +151,8 @@ class GameSettings(BaseSettings):
         self.opponent_start_pos: Vec2D = Vec2D(2, 0)
         self.target_action_selector: ActionSelector = SimpleActionSelector()
         self.opponent_action_selector: ActionSelector = SimpleActionSelector()
-        self.target_next_pos_selector: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
-        self.opponent_next_pos_selector: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
+        self.target_markov_transition_density: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
+        self.opponent_markov_transition_density: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
     
     def _process_line_helper(self, splitted_line: list[str]) -> None:
         match splitted_line:
@@ -164,12 +164,13 @@ class GameSettings(BaseSettings):
                 self.opponent_start_pos = Vec2D(int(start_x), int(start_y))
 
     def _set_command_line_settings_helper(self, command_line_arguments: BaseCommandLineArguments) -> None:
-        if command_line_arguments.agent_start_pos:
-            self.agent_start_pos = command_line_arguments.agent_start_pos
-        if command_line_arguments.target_start_pos:
-            self.target_start_pos = command_line_arguments.target_start_pos
-        if command_line_arguments.opponent_start_pos:
-            self.opponent_start_pos = command_line_arguments.opponent_start_pos
+        if isinstance(command_line_arguments, GameCommandLineArguments):
+            if command_line_arguments.agent_start_pos:
+                self.agent_start_pos = command_line_arguments.agent_start_pos
+            if command_line_arguments.target_start_pos:
+                self.target_start_pos = command_line_arguments.target_start_pos
+            if command_line_arguments.opponent_start_pos:
+                self.opponent_start_pos = command_line_arguments.opponent_start_pos
 
     def _validate_settings_helper(self) -> None:
         self.__check_for_same_starting_position("Agent", self.agent_start_pos, "Target", self.target_start_pos)
@@ -198,7 +199,7 @@ class TrainSettings(BaseSettings):
         super().__init__(command_line_arguments)
 
     def _set_default_settings_helper(self) -> None:
-        self.policy_file_path = "..\policies\policy.bin"
+        self.policy_file_path: str = r"..\policies\policy.bin"
         self.max_iter: int = 100
         self.reward: RewardFunction = SimpleRewardFunction()
     
@@ -208,8 +209,9 @@ class TrainSettings(BaseSettings):
                 self.max_iter = int(max_iter)
 
     def _set_command_line_settings_helper(self, command_line_arguments: BaseCommandLineArguments) -> None:
-        if command_line_arguments.max_iter:
-            self.max_iter = command_line_arguments.max_iter
+        if isinstance(command_line_arguments, TrainCommandLineArguments):
+            if command_line_arguments.max_iter:
+                self.max_iter = command_line_arguments.max_iter
 
     def _validate_settings_helper(self) -> None:
         if self.max_iter <= 0:

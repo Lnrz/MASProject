@@ -127,9 +127,9 @@ class State:
 @dataclass
 class GameData:
     state: State = field(default_factory=lambda: State())
-    agent_action: Action | None = None
-    target_action: Action | None = None
-    opponent_action: Action | None = None
+    agent_action: Action = Action.MAX_EXCLUSIVE
+    target_action: Action = Action.MAX_EXCLUSIVE
+    opponent_action: Action = Action.MAX_EXCLUSIVE
 
 @dataclass
 class TrainData:
