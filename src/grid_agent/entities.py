@@ -1,6 +1,7 @@
-from grid_agent.data_structs import State, Policy, MapSize, Obstacle, Vec2D, Action, Result, ValueFunction
+from grid_agent.data_structs import State, Policy, MapSize, Obstacle, Vec2D, Action, Result, ValueFunction, GameData
 from grid_agent.functors import ActionSelector, NextPosSelector, RewardFunction
 from grid_agent.settings import GameSettings, TrainSettings
+from typing import Callable
 from copy import copy, deepcopy
 
 class MapManager:
@@ -40,14 +41,18 @@ class Agent:
             self.__policy.fill(Action.Up, map_size.N3M3)
         self.__next_pos_selector: NextPosSelector = next_pos_selector
 
+    def get_state(self) -> State:
+        return self.__state
+
     def get_pos(self) -> Vec2D:
         return self.__state.agent_pos
 
-    def move(self, map_manager: MapManager) -> None:
+    def move(self, map_manager: MapManager) -> Action:
         action: Action = self.__policy.get_action(self.__state, map_manager.map_size)
         next_pos: Vec2D = self.__next_pos_selector.get_next_pos(self.__state.agent_pos, action)
         if (map_manager.is_pos_possible(next_pos)):
             self.__state.agent_pos.copy(next_pos)
+        return action
 
 class MovingEntity:
     
@@ -63,11 +68,12 @@ class MovingEntity:
     def set_banned_pos(self, banned_pos: Vec2D) -> None:
         self.__banned_pos: Vec2D = banned_pos
 
-    def move(self, map_manager: MapManager) -> None:
+    def move(self, map_manager: MapManager) -> Action:
         action: Action = self.__action_selector.get_action()
         next_pos: Vec2D = self.__next_pos_selector.get_next_pos(self.__pos, action)
         if (map_manager.is_pos_possible(next_pos) and next_pos != self.__banned_pos):
             self.__pos.copy(next_pos)
+        return action
 
 class GameManager:
     
@@ -78,20 +84,29 @@ class GameManager:
         self.__target.set_banned_pos(self.__opponent.get_pos())
         self.__opponent.set_banned_pos(self.__target.get_pos())
         self.__agent: Agent = Agent(game_settings.agent_start_pos, self.__target.get_pos(), self.__opponent.get_pos(), game_settings.agent_next_pos_selector, game_settings.policy_file_path, self.__map_manager.map_size)
+        self.__gamedata: GameData = GameData()
+        self.__callback: Callable[[GameData], None] = lambda g: None
+
+    def register_callback(self, callback: Callable[[GameData], None]) -> None:
+        self.__callback = callback
 
     def start(self) -> Result:
         self.__res: Result = Result.WaitingForResult
         while self.__res == Result.WaitingForResult:
+            self.__gamedata.state = deepcopy(self.__agent.get_state())
             self.__next_iteration()
-            print(f"{self.__agent._Agent__state}")
+            self.__callback(deepcopy(self.__gamedata))
+        self.__gamedata = GameData()
+        self.__gamedata.state = deepcopy(self.__agent.get_state())
+        self.__callback(deepcopy(self.__gamedata))
         return self.__res
 
     def __next_iteration(self) -> None:
-        self.__agent.move(self.__map_manager)
+        self.__gamedata.agent_action = self.__agent.move(self.__map_manager)
         if self.__check_for_result():
             return
-        self.__target.move(self.__map_manager)
-        self.__opponent.move(self.__map_manager)
+        self.__gamedata.target_action = self.__target.move(self.__map_manager)
+        self.__gamedata.opponent_action = self.__opponent.move(self.__map_manager)
         self.__check_for_result()
 
     def __check_for_result(self) -> bool:

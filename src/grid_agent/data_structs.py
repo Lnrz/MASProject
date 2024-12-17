@@ -41,8 +41,8 @@ class Obstacle:
     extent : Vec2D = field(default_factory=lambda: Vec2D())
 
     def is_inside(self, pos: Vec2D) -> bool:
-        return (pos.x >= self.origin.x and pos.x <= self.origin.x + self.extent.x and
-                pos.y <= self.origin.y and pos.y >= self.origin.y + self.extent.y)
+        return (pos.x >= self.origin.x and pos.x <= self.origin.x + self.extent.x - 1 and
+                pos.y <= self.origin.y and pos.y >= self.origin.y - self.extent.y + 1)
 
 @dataclass
 class MapSize:
@@ -107,6 +107,13 @@ class State:
             return True
         pos.y = 0
         return False
+
+@dataclass
+class GameData:
+    state: State = field(default_factory=lambda: State())
+    agent_action: Action | None = None
+    target_action: Action | None = None
+    opponent_action: Action | None = None
 
 @dataclass
 class Policy:
