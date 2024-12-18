@@ -49,24 +49,5 @@ class SimpleRewardFunction(RewardFunction):
         if next_state.agent_pos == next_state.opponent_pos:
             return -1
         if state.agent_pos == next_state.agent_pos:
-            return -0.5
+            return -0.25
         return -0.05
-
-def manhattan_distance(v1: Vec2D, v2: Vec2D) -> int:
-    return abs(v1.x - v2.x) + abs(v1.y - v2.y)
-    
-class ExpRewardFunction(RewardFunction):
-
-    def __call__(self, state: State, next_state: State, map_size: MapSize) -> float:
-        target_dist: int = manhattan_distance(next_state.agent_pos, next_state.target_pos)
-        opponent_dist: int = manhattan_distance(next_state.agent_pos, next_state.opponent_pos)
-        max_dist: int = map_size.N + map_size.M - 2
-        alpha: float = 10
-        target_influence: float = exp(-alpha * (target_dist / max_dist) ** 2)
-        opponent_influence: float = exp(-alpha * (opponent_dist / max_dist) ** 2)
-        target_scale: float = 1
-        opponent_scale: float = 0.75
-        wall_demerit: float = 0
-        if state == next_state:
-            wall_demerit = 0.1
-        return target_influence * target_scale - opponent_influence * opponent_scale - wall_demerit

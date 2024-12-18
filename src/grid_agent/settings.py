@@ -1,5 +1,5 @@
 from grid_agent.data_structs import Vec2D, Obstacle
-from grid_agent.functors import ActionSelector, SimpleActionSelector, MarkovTransitionDensity, SimpleMarkovTransitionDensity, RewardFunction, SimpleRewardFunction, ExpRewardFunction
+from grid_agent.functors import ActionSelector, SimpleActionSelector, MarkovTransitionDensity, SimpleMarkovTransitionDensity, RewardFunction, SimpleRewardFunction
 from abc import ABC, abstractmethod
 import argparse
 import re
