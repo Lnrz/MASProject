@@ -210,7 +210,7 @@ class TrainManager:
                 next_state.copy(state)
             self.__next_states_values[action.value] = self.__value_function.get_value(next_state, self.__map_manager.map_size)
             self.__actions_probabilities[action.value] = self.__markov_transition_density(chosen_action, action)
-        return (self.__reward(state, self.__next_states[chosen_action.value], self.__map_manager.map_size) +
+        return (self.__reward(state, self.__next_states[chosen_action.value]) +
                 self.__discount_factor * sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
 
     def __binary_search_index(self, state_idx: int) -> bool:

@@ -34,12 +34,12 @@ class SimpleMarkovTransitionDensity(MarkovTransitionDensity):
 class RewardFunction(ABC):
 
     @abstractmethod
-    def __call__(self, state: State, next_state: State, map_size: MapSize) -> float:
+    def __call__(self, state: State, next_state: State) -> float:
         ...
 
 class SimpleRewardFunction(RewardFunction):
 
-    def __call__(self, state: State, next_state: State, map_size: MapSize) -> float:
+    def __call__(self, state: State, next_state: State) -> float:
         if state.agent_pos == state.target_pos:
             return 1
         if state.agent_pos == state.opponent_pos:
@@ -49,5 +49,5 @@ class SimpleRewardFunction(RewardFunction):
         if next_state.agent_pos == next_state.opponent_pos:
             return -1
         if state.agent_pos == next_state.agent_pos:
-            return -0.25
-        return -0.05
+            return -0.1
+        return -0.01
