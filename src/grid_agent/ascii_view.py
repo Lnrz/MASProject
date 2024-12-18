@@ -1,5 +1,5 @@
 from grid_agent.data_structs import GameData, Obstacle, Vec2D, Action, Result
-from typing import Callable
+from typing import Callable, Any
 from time import sleep
 
 class ASCIIView:
@@ -42,7 +42,7 @@ class ASCIIView:
     def start_auto(self, time_interval: float) -> None:
         self.__start(lambda: sleep(time_interval))
 
-    def __start(self, in_between_action: Callable[[None], None]) -> None:
+    def __start(self, in_between_action: Callable[[], Any]) -> None:
         last_gamedata: GameData | None = None
         for gamedata in self.__gamedatas:
             self.__update_grid(gamedata, last_gamedata)
