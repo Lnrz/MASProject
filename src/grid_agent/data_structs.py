@@ -56,7 +56,9 @@ class Obstacle:
                 pos.y <= self.origin.y and pos.y >= self.origin.y - self.extent.y + 1)
     
     def to_pos(self) -> list[Vec2D]:
-        return [Vec2D(x, y) for x in range(self.origin.x) for y in range(self.origin.y)]
+        return [Vec2D(x, y)
+                for x in range(self.origin.x, self.origin.x + self.extent.x)
+                for y in range(self.origin.y - self.extent.y + 1, self.origin.y + 1)]
 
 @dataclass
 class MapSize:
