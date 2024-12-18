@@ -70,15 +70,8 @@ class ASCIIView:
 
     def __add_obstacles(self, obstacles: list[Obstacle]) -> None:
         for obstacle in obstacles:
-            for point in self.__obstacle_to_pos(obstacle):
+            for point in obstacle.to_pos():
                 self.__grid[self.__pos_to_grid_index(point)] = self.__obstacle_char
-
-    def __obstacle_to_pos(self, obstacle: Obstacle) -> list[Vec2D]:
-        res: list[Vec2D] = list[Vec2D]()
-        for i in range(obstacle.extent.x):
-            for j in range(obstacle.extent.y):
-                res.append(Vec2D(obstacle.origin.x + i, obstacle.origin.y - j))
-        return res
 
     def __pos_to_grid_index(self, pos: Vec2D) -> int:
         return ((self.__grid_horizontal_shift + self.__grid_horizontal_factor * pos.x) +

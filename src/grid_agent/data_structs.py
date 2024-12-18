@@ -54,6 +54,9 @@ class Obstacle:
     def is_inside(self, pos: Vec2D) -> bool:
         return (pos.x >= self.origin.x and pos.x <= self.origin.x + self.extent.x - 1 and
                 pos.y <= self.origin.y and pos.y >= self.origin.y - self.extent.y + 1)
+    
+    def to_pos(self) -> list[Vec2D]:
+        return [Vec2D(x, y) for x in range(self.origin.x) for y in range(self.origin.y)]
 
 @dataclass
 class MapSize:

@@ -1,5 +1,5 @@
 from grid_agent.data_structs import Vec2D, Obstacle
-from grid_agent.functors import ActionSelector, SimpleActionSelector, MarkovTransitionDensity, SimpleMarkovTransitionDensity, RewardFunction, SimpleRewardFunction
+from grid_agent.functors import ActionSelector, SimpleActionSelector, MarkovTransitionDensity, SimpleMarkovTransitionDensity, RewardFunction, SimpleRewardFunction, ExpRewardFunction
 from abc import ABC, abstractmethod
 import argparse
 import re
@@ -46,7 +46,7 @@ class GameCommandLineArguments(BaseCommandLineArguments):
             self.target_start_pos = self.__string_to_vec2D(args.target_start)
         self.opponent_start_pos: Vec2D | None = None
         if args.opponent_start:
-            self.opponent_start_pos_start_pos = self.__string_to_vec2D(args.opponent_start)
+            self.opponent_start_pos = self.__string_to_vec2D(args.opponent_start)
     
     def __string_to_vec2D(self, string: str) -> Vec2D:
         match: re.Match | None = re.search(r"\((\d+),(\d+)\)", string)
@@ -129,7 +129,16 @@ class BaseSettings(ABC):
 
     def __validate_settings(self) -> None:
         self.__check_map_size()
+        self.__check_for_out_of_bounds_obstacles()
         self._validate_settings_helper()
+
+    def __check_for_out_of_bounds_obstacles(self):
+        for obstacle in self.obstacles:
+            if (obstacle.origin.x < 0 or obstacle.origin.x + obstacle.extent.x >= self.map_size.x or
+                obstacle.origin.y >= self.map_size.y or obstacle.origin.y - obstacle.extent.y < 0):
+                raise ValueError(f"An obstacle was out of bounds\n" +
+                                 f"Obstacle was origin: ({obstacle.origin.x},{obstacle.origin.y}) extent: ({obstacle.extent.x},{obstacle.extent.y})\n" +
+                                 f"Map was {self.map_size.x}x{self.map_size.y}")
 
     @abstractmethod
     def _validate_settings_helper(self) -> None:
@@ -179,6 +188,9 @@ class GameSettings(BaseSettings):
         self.__check_for_collision_with_obstacles("Agent", self.agent_start_pos)
         self.__check_for_collision_with_obstacles("Target", self.target_start_pos)
         self.__check_for_collision_with_obstacles("Opponent", self.opponent_start_pos)
+        self.__check_for_out_of_bounds("Agent", self.agent_start_pos)
+        self.__check_for_out_of_bounds("Target", self.target_start_pos)
+        self.__check_for_out_of_bounds("Opponent", self.opponent_start_pos)
     
     def __check_for_same_starting_position(self, name1: str, pos1: Vec2D, name2: str, pos2: Vec2D) -> None:
         if pos1 == pos2:
@@ -193,6 +205,13 @@ class GameSettings(BaseSettings):
                                  + f"{name}: ({pos.x}, {pos.y})\n"
                                  + f"Obstacle: [origin: ({obstacle.origin.x}, {obstacle.origin.y}), extent: ({obstacle.extent.x}, {obstacle.extent.y})]")
             
+    def __check_for_out_of_bounds(self, name: str, pos: Vec2D) -> None:
+        if (pos.x < 0 or pos.x >= self.map_size.x or
+            pos.y < 0 or pos.y >= self.map_size.y):
+            raise ValueError(f"{name} is out of bounds:\n"
+                             + f"Map was {self.map_size.x}x{self.map_size.y}\n"
+                             + f"{name}'s position was ({pos.x},{pos.y})")
+
 class TrainSettings(BaseSettings):
 
     def __init__(self, command_line_arguments: TrainCommandLineArguments) -> None:

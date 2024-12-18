@@ -13,11 +13,13 @@ class MapManager:
         self.__obstacles: list[Obstacle] = obstacles
         self.__pos : Vec2D = Vec2D()
 
-    def move_if_possible(self, pos: Vec2D, action: Action) -> None:
+    def move_if_possible(self, pos: Vec2D, action: Action) -> bool:
         self.__pos.copy(pos)
         self.__pos.move(action)
         if self.is_pos_possible(self.__pos):
             pos.copy(self.__pos)
+            return True
+        return False
 
     def is_state_possible(self, state: State) -> bool:
         return (self.is_pos_possible(state.agent_pos) and self.is_pos_possible(state.target_pos) and self.is_pos_possible(state.opponent_pos) and
@@ -145,6 +147,7 @@ class TrainManager:
         self.__reward: RewardFunction = train_settings.reward
         self.__markov_transition_density: MarkovTransitionDensity = train_settings.agent_markov_transition_density
         self.__traindata: TrainData = TrainData()
+        self.__traindata.changed_actions_number = 1
         self.__callback: Callable[[TrainData], None] = lambda t: None
         self.__max_iter: int = train_settings.max_iter
         map_size: MapSize = self.__map_manager.map_size
@@ -163,6 +166,7 @@ class TrainManager:
         self.__policy.fill(Action.UP, map_size.N3M3)
         self.__value_function = ValueFunction()
         self.__value_function.fill(0.0, map_size.N3M3)
+        self.__discount_factor: float = 0.5
 
     def register_callback(self, callback: Callable[[TrainData], None]) -> None:
         self.__callback = callback
@@ -170,6 +174,7 @@ class TrainManager:
     def start(self) -> None:
         while (not self.__check_stop_conditions()):
             self.__prepare_traindata()
+            print(f"{self.__traindata.iteration_number}-th iteration")
             self.__next_iteration()
             self.__callback(copy(self.__traindata))
         self.__policy.write_to_file(self.__policy_file_path)
@@ -205,8 +210,8 @@ class TrainManager:
                 next_state.copy(state)
             self.__next_states_values[action.value] = self.__value_function.get_value(next_state, self.__map_manager.map_size)
             self.__actions_probabilities[action.value] = self.__markov_transition_density(chosen_action, action)
-        return (self.__reward(self.__next_states[chosen_action.value], self.__map_manager.map_size) +
-                sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
+        return (self.__reward(state, self.__next_states[chosen_action.value], self.__map_manager.map_size) +
+                self.__discount_factor * sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
 
     def __binary_search_index(self, state_idx: int) -> bool:
         i: int = 0
