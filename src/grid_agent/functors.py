@@ -41,13 +41,13 @@ class SimpleRewardFunction(RewardFunction):
 
     def __call__(self, state: State, next_state: State) -> float:
         if state.agent_pos == state.target_pos:
-            return 1
+            return 1.0
         if state.agent_pos == state.opponent_pos:
-            return -1
+            return -1.0
         if next_state.agent_pos == next_state.target_pos:
-            return 1
+            return 0.25
         if next_state.agent_pos == next_state.opponent_pos:
-            return -1
-        if state.agent_pos == next_state.agent_pos:
-            return -0.1
+            return -0.25
+        #if state.agent_pos == next_state.agent_pos:
+        #    return -0.01
         return -0.01

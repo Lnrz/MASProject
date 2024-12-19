@@ -26,11 +26,11 @@ class MapManager:
                 state.target_pos != state.opponent_pos)
 
     def is_pos_possible(self, pos: Vec2D) -> bool:
-        if self.__is_out_of_bounds(pos):
+        if self.is_out_of_bounds(pos):
             return False
         return not any([obs.is_inside(pos) for obs in self.__obstacles])
     
-    def __is_out_of_bounds(self, pos: Vec2D) -> bool:
+    def is_out_of_bounds(self, pos: Vec2D) -> bool:
         return (pos.x < 0 or pos.x >= self.map_size.N or
                 pos.y < 0 or pos.y >= self.map_size.M)
 
@@ -164,9 +164,11 @@ class TrainManager:
                 self.__possible_states_num += 1
         self.__policy: Policy = Policy()
         self.__policy.fill(Action.UP, map_size.N3M3)
-        self.__value_function = ValueFunction()
-        self.__value_function.fill(0.0, map_size.N3M3)
-        self.__discount_factor: float = 0.5
+        self.__read_value_function: ValueFunction = ValueFunction()
+        self.__read_value_function.fill(0.0, map_size.N3M3)
+        self.__write_value_function: ValueFunction = ValueFunction()
+        self.__write_value_function.fill(0.0, map_size.N3M3)
+        self.__discount_factor: float = 0.55
 
     def register_callback(self, callback: Callable[[TrainData], None]) -> None:
         self.__callback = callback
@@ -174,9 +176,10 @@ class TrainManager:
     def start(self) -> None:
         while (not self.__check_stop_conditions()):
             self.__prepare_traindata()
-            print(f"{self.__traindata.iteration_number}-th iteration")
+            print(f"{self.__traindata.iteration_number}-th iteration", end="\r")
             self.__next_iteration()
             self.__callback(copy(self.__traindata))
+        print()
         self.__policy.write_to_file(self.__policy_file_path)
 
     def __check_stop_conditions(self) -> bool:
@@ -198,17 +201,20 @@ class TrainManager:
             self.__state.from_index(self.__possible_states_indices[j], self.__map_manager.map_size)
             new_value: float = self.__calculate_new_value_function_value(self.__state, self.__policy.get_action(self.__state, self.__map_manager.map_size))
             self.__traindata.mean_value += new_value
-            self.__value_function.set_value(self.__state, new_value, self.__map_manager.map_size)
+            self.__write_value_function.set_value(self.__state, new_value, self.__map_manager.map_size)
             j += 1
+        temp: ValueFunction = self.__read_value_function
+        self.__read_value_function = self.__write_value_function
+        self.__write_value_function = temp
         self.__traindata.mean_value /= self.__possible_states_num
 
     def __calculate_new_value_function_value(self, state: State, chosen_action: Action) -> float:
         for next_state, action in zip(self.__next_states, self.__actions):
             next_state.copy(state)
             next_state.agent_pos.move(action)
-            if not self.__binary_search_index(next_state.to_index(self.__map_manager.map_size)):
+            if not self.__binary_search_index(next_state.to_index(self.__map_manager.map_size)) or self.__map_manager.is_out_of_bounds(next_state.agent_pos):
                 next_state.copy(state)
-            self.__next_states_values[action.value] = self.__value_function.get_value(next_state, self.__map_manager.map_size)
+            self.__next_states_values[action.value] = self.__read_value_function.get_value(next_state, self.__map_manager.map_size)
             self.__actions_probabilities[action.value] = self.__markov_transition_density(chosen_action, action)
         return (self.__reward(state, self.__next_states[chosen_action.value]) +
                 self.__discount_factor * sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
@@ -216,7 +222,7 @@ class TrainManager:
     def __binary_search_index(self, state_idx: int) -> bool:
         i: int = 0
         j: int = self.__possible_states_num - 1
-        while i < j:
+        while i <= j:
             k: int = (i + j) // 2
             idx: int = self.__possible_states_indices[k]
             if idx == state_idx:
@@ -240,4 +246,13 @@ class TrainManager:
         self.__traindata.changed_actions_percentage = self.__traindata.changed_actions_number / self.__possible_states_num
 
     def __calculate_new_policy_action(self, state: State) -> Action:
-        return max(self.__actions, key=lambda action: self.__calculate_new_value_function_value(state, action))
+        return max(self.__actions, key=lambda action: self.__mask_actions(state, action))
+    
+    def __mask_actions(self, state: State, action: Action) -> float:
+        state.agent_pos.move(action)
+        found: bool = self.__binary_search_index(state.to_index(self.__map_manager.map_size))
+        out_of: bool = self.__map_manager.is_out_of_bounds(state.agent_pos)
+        state.agent_pos.undo(action)
+        if not found or out_of:
+            return float("-inf")
+        return self.__calculate_new_value_function_value(state, action)

@@ -8,7 +8,7 @@ def main() -> None:
   viewer: ASCIIView = ASCIIView(game_settings.map_size, game_settings.obstacles)
   game_manager.register_callback(viewer.get_callback())
   game_manager.start()
-  viewer.start_manual()
+  viewer.start_auto(1.5)
 
 if __name__ == "__main__":
     main()
