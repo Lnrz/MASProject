@@ -1,5 +1,5 @@
 from grid_agent.data_structs import Vec2D, Obstacle
-from grid_agent.functors import ActionSelector, SimpleActionSelector, MarkovTransitionDensity, SimpleMarkovTransitionDensity, RewardFunction, SimpleRewardFunction
+from grid_agent.functors import PolicyFun, UniformPolicy, MarkovTransitionDensity, SimpleMarkovTransitionDensity, RewardFunction, SimpleRewardFunction
 from abc import ABC, abstractmethod
 import argparse
 import re
@@ -77,7 +77,7 @@ class BaseSettings(ABC):
         self.__validate_settings()
 
     def __set_default_settings(self) -> None:
-        self.policy_file_path: str | None = None
+        self.policy_file_path: str = r"..\policies\policy.bin"
         self.map_size: Vec2D = Vec2D(3, 3)
         self.obstacles: list[Obstacle] = list[Obstacle]()
         self.agent_markov_transition_density: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
@@ -158,8 +158,8 @@ class GameSettings(BaseSettings):
         self.agent_start_pos: Vec2D = Vec2D(0, 0)
         self.target_start_pos: Vec2D = Vec2D(2, 2)
         self.opponent_start_pos: Vec2D = Vec2D(2, 0)
-        self.target_action_selector: ActionSelector = SimpleActionSelector()
-        self.opponent_action_selector: ActionSelector = SimpleActionSelector()
+        self.target_action_selector: PolicyFun = UniformPolicy()
+        self.opponent_action_selector: PolicyFun = UniformPolicy()
         self.target_markov_transition_density: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
         self.opponent_markov_transition_density: MarkovTransitionDensity = SimpleMarkovTransitionDensity()
     
@@ -218,7 +218,6 @@ class TrainSettings(BaseSettings):
         super().__init__(command_line_arguments)
 
     def _set_default_settings_helper(self) -> None:
-        self.policy_file_path: str = r"..\policies\policy.bin"
         self.max_iter: int = 100
         self.reward: RewardFunction = SimpleRewardFunction()
     

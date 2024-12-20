@@ -1,18 +1,26 @@
-from grid_agent.data_structs import Vec2D, Action, State, MapSize
+from grid_agent.data_structs import Action, State, Policy, ValidStateSpace
 from abc import ABC, abstractmethod
-from math import exp
 import random as rnd
 
-class ActionSelector(ABC):
+class PolicyFun(ABC):
 
     @abstractmethod
-    def __call__(self) -> Action:
+    def __call__(self, state: State) -> Action:
         ...
 
-class SimpleActionSelector(ActionSelector):
+class UniformPolicy(PolicyFun):
 
-    def __call__(self) -> Action:
+    def __call__(self, state: State) -> Action:
         return Action(rnd.randrange(Action.MAX_EXCLUSIVE))
+
+class AgentPolicy(PolicyFun):
+
+    def __init__(self, policy_file_path: str, valid_state_space: ValidStateSpace) -> None:
+        self.__policy: Policy = Policy.from_file(policy_file_path)
+        self.__valid_state_space: ValidStateSpace = valid_state_space
+
+    def __call__(self, state: State) -> Action:
+        return self.__policy.get_action(self.__valid_state_space.get_index(state))
 
 
 
@@ -48,6 +56,4 @@ class SimpleRewardFunction(RewardFunction):
             return 0.25
         if next_state.agent_pos == next_state.opponent_pos:
             return -0.25
-        #if state.agent_pos == next_state.agent_pos:
-        #    return -0.01
         return -0.01

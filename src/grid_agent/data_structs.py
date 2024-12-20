@@ -1,7 +1,7 @@
 from enum import IntEnum
 from dataclasses import dataclass, field
 from array import array
-from typing import Self
+from typing import Self, final
 
 class Result(IntEnum):
     FAIL = 0,
@@ -112,7 +112,7 @@ class State:
         if self.__next_pos(self.opponent_pos, map_size):
             return False
         return not self.__next_pos(self.target_pos, map_size)
-        
+
     def __next_pos(self, pos: Vec2D, map_size: MapSize) -> bool:
         pos.x += 1
         if pos.x < map_size.N:
@@ -143,38 +143,137 @@ class TrainData:
     changed_actions_number: int = 0
     changed_actions_percentage: float = 0.0
 
-@dataclass
-class Policy:
-    __arr : array = field(default_factory=lambda: array("b"))
+class ValidStateSpaceIterator:
 
-    def get_action(self, state: State, map_size: MapSize) -> Action:
-        return Action(self.__arr[state.to_index(map_size)])
+    def __init__(self, states: array, space_size: int, map_size: MapSize) -> None:
+        self.__array: array = states
+        self.__space_size: int = space_size;
+        self.__map_size: MapSize = map_size
+        self.__current_index: int = -1
+        self.__state: State = State()
+
+    def __next__(self) -> tuple[int, State]:
+        self.__current_index += 1
+        if self.__current_index == self.__space_size:
+            raise StopIteration()
+        self.__state.from_index(self.__array[self.__current_index], self.__map_size)
+        return (self.__current_index, self.__state)
+
+class ValidStateSpace:
+
+    def __init__(self, map_size: Vec2D, obstacles: list[Obstacle]) -> None:
+        self.__map_size: MapSize = MapSize(map_size.x, map_size.y)
+        self.space_size: int = 0
+        index_list: list[int] = list[int]()
+        state: State = State()
+        while (not state.next_state(self.__map_size)):
+            if self.__is_state_valid(state, obstacles):
+                index_list.append(state.to_index(self.__map_size))
+                self.space_size += 1
+        self.__pick_smallest_array(self.space_size)
+        self.__arr.fromlist(index_list)
+
+    def get_index(self, state: State) -> int:
+        state_index: int = state.to_index(self.__map_size)
+        return self.__binary_search(state_index)
+
+    def is_valid(self, state: State) -> bool:
+        state_index: int = state.to_index(self.__map_size)
+        return self.__binary_search(state_index) != -1 and self.__is_state_within_bounds(state)
+
+    def __pick_smallest_array(self, number_of_states: int) -> None:
+        type_char: str
+        if number_of_states <= 2 ** 8:
+            type_char = "B"
+        elif number_of_states <= 2 ** 16:
+            type_char = "H"
+        elif number_of_states <= 2 ** 32:
+            type_char = "L"
+        else:
+            type_char = "Q"
+        self.__arr : array = array(type_char)
+
+    def __binary_search(self, state_index: int) -> int:
+        i: int = 0
+        j: int = self.space_size - 1
+        while i <= j:
+            k: int = (i + j) // 2
+            retrieved_index: int = self.__arr[k]
+            if retrieved_index == state_index:
+                return k
+            elif retrieved_index < state_index:
+                i = k + 1
+            else:
+                j = k - 1
+        return -1
+
+    def __is_state_valid(self, state: State, obstacles: list[Obstacle]) -> bool:
+        if state.target_pos == state.opponent_pos:
+            return False
+        for obstacle in obstacles:
+            if (obstacle.is_inside(state.agent_pos) or
+                obstacle.is_inside(state.opponent_pos) or
+                obstacle.is_inside(state.target_pos)):
+                return False
+        return True
     
-    def set_action(self, state: State, action: Action, map_size: MapSize) -> None:
-        self.__arr[state.to_index(map_size)] = action.value
+    def __is_state_within_bounds(self, state: State) -> bool:
+        return (self.__is_pos_within_bounds(state.agent_pos) and
+                self.__is_pos_within_bounds(state.opponent_pos) and
+                self.__is_pos_within_bounds(state.target_pos))
 
-    def read_from_file(self, policy_file_name: str, policy_size: int) -> None:
-        self.__arr.clear()
+    def __is_pos_within_bounds(self, pos: Vec2D) -> bool:
+        return (pos.x > -1 and pos.x < self.__map_size.N and
+                pos.y > -1 and pos.y < self.__map_size.M)
+
+    def __iter__(self) -> ValidStateSpaceIterator:
+        return ValidStateSpaceIterator(self.__arr, self.space_size, self.__map_size)
+
+@final
+class Policy:
+
+    @classmethod
+    def from_file(cls, policy_file_name: str) -> Self:
+        p: Policy = Policy()
         with open(policy_file_name, "rb") as f:
-            self.__arr.fromfile(f, policy_size)
+            policy_size: int = f.seek(0, 2)
+            f.seek(0, 0)
+            p.__arr.fromfile(f, policy_size)
+        return p
+
+    @classmethod
+    def from_action(cls, policy_size: int, action: Action = Action.UP) -> Self:
+        p: Policy = Policy()
+        p.__arr.fromlist([action.value for i in range(policy_size)])
+        return p
+
+    def __init__(self) -> None:
+        self.__arr : array = array("B")
+
+    def get_action(self, index: int) -> Action:
+        return Action(self.__arr[index])
+    
+    def set_action(self, index: int, action: Action) -> None:
+        self.__arr[index] = action.value
 
     def write_to_file(self, policy_file_name: str) -> None:
         with open(policy_file_name, "wb") as f:
             self.__arr.tofile(f)
 
-    def fill(self, action: Action, policy_size: int) -> None:
-        self.__arr.clear()
-        self.__arr.fromlist([action.value for i in range(policy_size)])
+class ValueFunctionsContainer:
 
-@dataclass
-class ValueFunction:
-    __arr : array = field(default_factory=lambda: array("d"))
+    def __init__(self, size: int, start_value: float = 0.0):
+        self.__old_values : array = array("d")
+        self.__new_values : array = array("d")
+        values: list[float] = [start_value for i in range(size)]
+        self.__old_values.fromlist(values)
+        self.__new_values.fromlist(values)
 
-    def fill(self, value: float, size: int):
-        self.__arr.fromlist([value for i in range(size)])
+    def get_current_value(self, index: int) -> float:
+        return self.__old_values[index]
 
-    def get_value(self, state: State, map_size: MapSize) -> float:
-        return self.__arr[state.to_index(map_size)]
+    def set_next_value(self, index: int, value: float) -> None:
+        self.__new_values[index] = value
 
-    def set_value(self, state: State, value: float, map_size: MapSize) -> None:
-        self.__arr[state.to_index(map_size)] = value
+    def swap_value_functions(self) -> None:
+        self.__old_values, self.__new_values = self.__new_values, self.__old_values
