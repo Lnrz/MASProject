@@ -1,4 +1,4 @@
-from grid_agent.data_structs import Action, State, Policy, ValidStateSpace
+from grid_agent.data_structs import Action, State, Policy, ValidStateSpace, Vec2D
 from abc import ABC, abstractmethod
 import random as rnd
 
@@ -39,6 +39,9 @@ class SimpleMarkovTransitionDensity(MarkovTransitionDensity):
 
 
 
+def manhattan_distance(point_a: Vec2D, point_b: Vec2D):
+    return abs(point_a.x - point_b.x) + abs(point_a.y - point_b.y)
+
 class RewardFunction(ABC):
 
     @abstractmethod
@@ -56,4 +59,6 @@ class SimpleRewardFunction(RewardFunction):
             return 0.25
         if next_state.agent_pos == next_state.opponent_pos:
             return -0.25
+        if manhattan_distance(next_state.agent_pos, next_state.opponent_pos) == 1:
+            return -0.1
         return -0.01
