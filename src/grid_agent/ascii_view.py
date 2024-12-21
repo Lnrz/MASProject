@@ -21,7 +21,7 @@ class ASCIIView:
     __vertical_border_char: str = u"\u2016"
     __horizontal_border_size: int = 1
     __vertical_border_size: int = 1
-    __grid_horizontal_factor: int = 5
+    __grid_horizontal_factor: int = 6
     __grid_horizontal_shift: int = 2
     __grid_vertical_factor: int = 3
     __grid_vertical_shift: int = 1
