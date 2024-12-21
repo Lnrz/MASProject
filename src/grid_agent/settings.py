@@ -49,7 +49,7 @@ class GameCommandLineArguments(BaseCommandLineArguments):
             self.opponent_start_pos = self.__string_to_vec2D(args.opponent_start)
     
     def __string_to_vec2D(self, string: str) -> Vec2D:
-        match: re.Match | None = re.search(r"\((\d+),(\d+)\)", string)
+        match: re.Match[str] | None = re.search(r"\((\d+),(\d+)\)", string)
         if match:
             return Vec2D(int(match[1]), int(match[2]))
         else:
@@ -115,10 +115,10 @@ class BaseSettings(ABC):
             self._process_line_helper(splitted_line)
 
     @abstractmethod
-    def _process_line_helper(self, splitted_line: list[str]):
+    def _process_line_helper(self, splitted_line: list[str]) -> None:
         ...
 
-    def __set_command_line_settings(self, command_line_arguments: BaseCommandLineArguments):
+    def __set_command_line_settings(self, command_line_arguments: BaseCommandLineArguments) -> None:
         if command_line_arguments.policy_file_path:
             self.policy_file_path = command_line_arguments.policy_file_path
         self._set_command_line_settings_helper(command_line_arguments)
@@ -132,7 +132,7 @@ class BaseSettings(ABC):
         self.__check_for_out_of_bounds_obstacles()
         self._validate_settings_helper()
 
-    def __check_for_out_of_bounds_obstacles(self):
+    def __check_for_out_of_bounds_obstacles(self) -> None:
         for obstacle in self.obstacles:
             if (obstacle.origin.x < 0 or obstacle.origin.x + obstacle.extent.x - 1 >= self.map_size.x or
                 obstacle.origin.y >= self.map_size.y or obstacle.origin.y - obstacle.extent.y + 1 < 0):

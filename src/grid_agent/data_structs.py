@@ -145,8 +145,8 @@ class TrainData:
 
 class ValidStateSpaceIterator:
 
-    def __init__(self, states: array, space_size: int, map_size: MapSize) -> None:
-        self.__array: array = states
+    def __init__(self, states: array[int], space_size: int, map_size: MapSize) -> None:
+        self.__array: array[int] = states
         self.__space_size: int = space_size;
         self.__map_size: MapSize = map_size
         self.__current_index: int = -1
@@ -164,7 +164,7 @@ class ValidStateSpace:
     def __init__(self, map_size: Vec2D, obstacles: list[Obstacle]) -> None:
         self.__map_size: MapSize = MapSize(map_size.x, map_size.y)
         self.space_size: int = 0
-        index_list: list[int] = list[int]()
+        index_list: list[int] = []
         state: State = State()
         while (not state.next_state(self.__map_size)):
             if self.__is_state_valid(state, obstacles):
@@ -191,7 +191,7 @@ class ValidStateSpace:
             type_char = "L"
         else:
             type_char = "Q"
-        self.__arr : array = array(type_char)
+        self.__arr : array[int] = array(type_char)
 
     def __binary_search(self, state_index: int) -> int:
         i: int = 0
@@ -248,7 +248,7 @@ class Policy:
         return p
 
     def __init__(self) -> None:
-        self.__arr : array = array("B")
+        self.__arr : array[int] = array("B")
 
     def get_action(self, index: int) -> Action:
         return Action(self.__arr[index])
@@ -263,8 +263,8 @@ class Policy:
 class ValueFunctionsContainer:
 
     def __init__(self, size: int, start_value: float = 0.0):
-        self.__old_values : array = array("d")
-        self.__new_values : array = array("d")
+        self.__old_values : array[float] = array("d")
+        self.__new_values : array[float] = array("d")
         values: list[float] = [start_value for i in range(size)]
         self.__old_values.fromlist(values)
         self.__new_values.fromlist(values)
