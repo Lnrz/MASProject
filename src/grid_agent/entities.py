@@ -129,12 +129,14 @@ class TrainManager:
 
     def __calculate_new_value_function_value(self, state: State, chosen_action: Action) -> float:
         for next_state, action in zip(self.__next_states, self.__actions):
+            self.__actions_probabilities[action.value] = self.__markov_transition_density(chosen_action, action)
+            if self.__actions_probabilities[action.value] == 0.0:
+                pass
             next_state.copy(state)
             next_state.agent_pos.move(action)
             if not self.__valid_states_space.is_valid(next_state):
                 next_state.agent_pos.undo(action)
             self.__next_states_values[action.value] = self.__value_functions_container.get_current_value(self.__valid_states_space.get_index(next_state))
-            self.__actions_probabilities[action.value] = self.__markov_transition_density(chosen_action, action)
         return (self.__reward(state, self.__next_states[chosen_action.value]) +
                 self.__discount_factor * sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
     
