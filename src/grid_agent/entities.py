@@ -48,10 +48,10 @@ class GameManager:
         while self.__res == Result.WAITING_FOR_RESULT:
             self.__gamedata.state = deepcopy(self.__state)
             self.__next_iteration()
-            self.__callback(deepcopy(self.__gamedata))
+            self.__callback(copy(self.__gamedata))
         self.__gamedata = GameData()
         self.__gamedata.state = deepcopy(self.__state)
-        self.__callback(deepcopy(self.__gamedata))
+        self.__callback(copy(self.__gamedata))
         return self.__res
 
     def __next_iteration(self) -> None:
