@@ -140,6 +140,7 @@ class GameData:
 class TrainData:
     iteration_number: int = 0
     mean_value: float = 0.0
+    max_value_diff: float = 0.0
     changed_actions_number: int = 0
     changed_actions_percentage: float = 0.0
 
