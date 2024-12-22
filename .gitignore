@@ -24,4 +24,4 @@ __pycache__/
 
 # Train data files
 *.json
-!train_data/example.json
+!train_datas/example.json
