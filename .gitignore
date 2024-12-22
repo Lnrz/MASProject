@@ -16,8 +16,12 @@ __pycache__/
 
 # Binary files
 *.bin
-!policies/sample.bin
+!policies/example.bin
 
 # Config files
 *.cfg
-!configs/sample.cfg
+!configs/example.cfg
+
+# Train data files
+*.json
+!train_data/example.json
