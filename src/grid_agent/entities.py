@@ -1,6 +1,6 @@
 from grid_agent.data_structs import State, Policy, Vec2D, Action, Result, ValueFunctionsContainer, GameData, TrainData, ValidStateSpace
 from grid_agent.functors import PolicyFun, MarkovTransitionDensity, RewardFunction, AgentPolicy
-from grid_agent.settings import GameConfigs, TrainConfigs
+from grid_agent.configuration import GameConfigs, TrainConfigs
 from typing import Callable
 from copy import copy, deepcopy
 import random as rnd

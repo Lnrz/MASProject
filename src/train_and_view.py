@@ -1,5 +1,5 @@
 from argparse import ArgumentParser, Namespace
-from grid_agent.settings import TrainConfigs
+from grid_agent.configuration import TrainConfigs
 from grid_agent.entities import TrainManager
 from grid_agent.train_view import TrainDataView
 
