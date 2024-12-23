@@ -229,6 +229,27 @@ class ValidStateSpace:
 
     def __iter__(self) -> ValidStateSpaceIterator:
         return ValidStateSpaceIterator(self.__arr, self.space_size, self.__map_size)
+    
+    def __len__(self) -> int:
+        return self.space_size
+    
+    def __getitem__(self, index: int | slice) -> State | list[State]:
+        state_indices: int | list[int] = self.__arr[index]
+        if isinstance(state_indices, int):
+            state: State = State()
+            state.from_index(state_indices, self.__map_size)
+            return state
+        states: list[State] = [State() for _ in state_indices]
+        for state, index in zip(states, state_indices):
+            state.from_index(index, self.__map_size)
+        return states
+
+    def __contains__(self, obj: int | State) -> bool:
+        if isinstance(obj, int):
+            return self.__binary_search(obj) != -1
+        if isinstance(obj, State):
+            return self.is_valid(obj)
+        raise TypeError(f"ValidStateSpace expected int or State, but was {type(obj)}")
 
 @final
 class Policy:
