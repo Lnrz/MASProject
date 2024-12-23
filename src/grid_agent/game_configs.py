@@ -1,5 +1,7 @@
-from grid_agent.base_configs import BaseConfigs, ConfigArgument, Vec2D, MarkovTransitionDensity, SimpleMarkovTransitionDensity, Callable
-from grid_agent.functors import PolicyFun, AgentPolicy, UniformPolicy
+from grid_agent.base_configs import BaseConfigs, ConfigArgument
+from grid_agent.data_structs import  Vec2D
+from grid_agent.functors import PolicyFun, AgentPolicy, UniformPolicy, MarkovTransitionDensity, SimpleMarkovTransitionDensity
+from typing import Callable
 
 class GameConfigs(BaseConfigs):
 
