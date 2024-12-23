@@ -1,4 +1,5 @@
-from grid_agent.base_configs import BaseConfigs, ConfigArgument, RewardFunction, SimpleRewardFunction, Callable
+from grid_agent.base_configs import BaseConfigs, ConfigArgument, Callable
+from grid_agent.functors import RewardFunction, SimpleRewardFunction
 
 class TrainConfigs(BaseConfigs):
 
