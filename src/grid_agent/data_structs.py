@@ -234,7 +234,7 @@ class ValidStateSpace:
         return self.space_size
     
     def __getitem__(self, index: int | slice) -> State | list[State]:
-        state_indices: int | list[int] = self.__arr[index]
+        state_indices: int | array[int] = self.__arr[index]
         if isinstance(state_indices, int):
             state: State = State()
             state.from_index(state_indices, self.__map_size)
