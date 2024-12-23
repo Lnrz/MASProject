@@ -3,15 +3,66 @@ from grid_agent.functors import PolicyFun, UniformPolicy, MarkovTransitionDensit
 from abc import ABC, abstractmethod
 from typing import Callable
 
+class  ConfigArgument[T]:
+
+    def __init__(self, value: T) -> None:
+        self.value: T = value
+        self.frozen: bool = False
+
 class BaseConfigs(ABC):
 
     def __init__(self) -> None:
-        self.configs_file_path: str = ""
-        self.policy_file_path: str = ""
-        self.map_size: Vec2D  = Vec2D()
-        self.obstacles: list[Obstacle]  = []
-        self.agent_markov_transition_density_factory: Callable[[BaseConfigs], MarkovTransitionDensity] = lambda c: SimpleMarkovTransitionDensity()
+        self._configs_file_path: ConfigArgument[str] = ConfigArgument("")
+        self._policy_file_path: ConfigArgument[str] = ConfigArgument("")
+        self._map_size: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
+        self._obstacles: ConfigArgument[list[Obstacle]]  = ConfigArgument([])
+        self._agent_markov_transition_density_factory: ConfigArgument[Callable[[BaseConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
         self.line_processing_extension: Callable[[BaseConfigs, list[str]], None] = lambda c, l: None
+
+    @property
+    def configs_file_path(self) -> str:
+        return self._configs_file_path.value
+
+    @configs_file_path.setter
+    def configs_file_path(self, path: str) -> None:
+        self._configs_file_path.value = path
+        self._configs_file_path.frozen = True
+
+    @property
+    def policy_file_path(self) -> str:
+        return self._policy_file_path.value
+
+    @policy_file_path.setter
+    def policy_file_path(self, path: str) -> None:
+        self._policy_file_path.value = path
+        self._policy_file_path.frozen = True
+
+    @property
+    def map_size(self) -> Vec2D:
+        return self._map_size.value
+
+    @map_size.setter
+    def map_size(self, map_size: Vec2D) -> None:
+        self._map_size.value = map_size
+        self._map_size.frozen = True
+
+    @property
+    def obstacles(self) -> list[Obstacle]:
+        return self._obstacles.value
+
+    @obstacles.setter
+    def obstacles(self, obstacles: list[Obstacle]) -> None:
+        self._obstacles.value = obstacles
+        self._obstacles.frozen = True
+
+    @property
+    def agent_markov_transition_density_factory(self) -> Callable[["BaseConfigs"], MarkovTransitionDensity]:
+        return self._agent_markov_transition_density_factory.value
+
+    @agent_markov_transition_density_factory.setter
+    def agent_markov_transition_density_factory(self, factory: Callable[["BaseConfigs"], MarkovTransitionDensity]) -> None:
+        self._agent_markov_transition_density_factory.value = factory
+        self._agent_markov_transition_density_factory.frozen = True
 
     def validate(self) -> None:
         self.__apply_file()
@@ -19,14 +70,13 @@ class BaseConfigs(ABC):
         self.__create()
 
     def __apply_file(self) -> None:
-        if self.configs_file_path is not None:
-            self.__read_configuration_file(self.configs_file_path)
-
-    def __read_configuration_file(self, configuration_file_path: str) -> None:
-        with open(configuration_file_path) as f:
+        if not self.configs_file_path:
+            return
+        with open(self.configs_file_path) as f:
             for line in f.readlines():
-                if not line.isspace():
-                    self.__process_line(line)
+                if line.isspace():
+                    continue
+                self.__process_line(line)
 
     def __process_line(self, line: str) -> None:
         if line.startswith("#"):
@@ -36,11 +86,14 @@ class BaseConfigs(ABC):
         has_match: bool = True
         match splitted_line:
             case ["mapsize", map_x_length, map_y_length]:
-                self.map_size = Vec2D(int(map_x_length), int(map_y_length))
+                if not self._map_size.frozen:
+                    self._map_size.value = Vec2D(int(map_x_length), int(map_y_length))
             case ["obstacle", origin_x, origin_y, extent_x, extent_y]:
-                self.obstacles.append(Obstacle(Vec2D(int(origin_x), int(origin_y)), Vec2D(int(extent_x), int(extent_y))))
+                if not self._obstacles.frozen:
+                    self._obstacles.value.append(Obstacle(Vec2D(int(origin_x), int(origin_y)), Vec2D(int(extent_x), int(extent_y))))
             case ["policy", policy_path]:
-                self.policy_file_path = policy_path
+                if not self._policy_file_path.frozen:
+                    self._policy_file_path.value = policy_path
             case _:
                 has_match = False
         if not has_match:
@@ -87,23 +140,98 @@ class GameConfigs(BaseConfigs):
 
     def __init__(self) -> None:
         super().__init__()
-        self.agent_start: Vec2D = Vec2D()
-        self.target_start: Vec2D = Vec2D()
-        self.opponent_start: Vec2D = Vec2D()
-        self.agent_policy_factory: Callable[[GameConfigs], PolicyFun] = lambda c: AgentPolicy(c.policy_file_path, c.valid_state_space)
-        self.target_policy_factory: Callable[[GameConfigs], PolicyFun] = lambda c: UniformPolicy()
-        self.opponent_policy_factory: Callable[[GameConfigs], PolicyFun] = lambda c: UniformPolicy()
-        self.target_markov_transition_density_factory: Callable[[GameConfigs], MarkovTransitionDensity] = lambda c: SimpleMarkovTransitionDensity()
-        self.opponent_markov_transition_density_factory: Callable[[GameConfigs], MarkovTransitionDensity] = lambda c: SimpleMarkovTransitionDensity()
+        self._agent_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
+        self._target_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
+        self._opponent_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
+        self._agent_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: AgentPolicy(c.policy_file_path, c.valid_state_space))
+        self._target_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: UniformPolicy())
+        self._opponent_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: UniformPolicy())
+        self._target_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
+        self._opponent_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
     
+    @property
+    def agent_start(self) -> Vec2D:
+        return self._agent_start.value
+
+    @agent_start.setter
+    def agent_start(self, start: Vec2D) -> None:
+        self._agent_start.value = start
+        self._agent_start.frozen = True
+
+    @property
+    def target_start(self) -> Vec2D:
+        return self._target_start.value
+
+    @target_start.setter
+    def target_start(self, start: Vec2D) -> None:
+        self._target_start.value = start
+        self._target_start.frozen = True
+
+    @property
+    def opponent_start(self) -> Vec2D:
+        return self._opponent_start.value
+
+    @opponent_start.setter
+    def opponent_start(self, start: Vec2D) -> None:
+        self._opponent_start.value = start
+        self._opponent_start.frozen = True
+
+    @property
+    def agent_policy_factory(self) -> Callable[["GameConfigs"], PolicyFun]:
+        return self._agent_policy_factory.value
+
+    @agent_policy_factory.setter
+    def agent_policy_factory(self, factory: Callable[["GameConfigs"], PolicyFun]) -> None:
+        self._agent_policy_factory.value = factory
+        self._agent_policy_factory.frozen = True
+
+    @property
+    def target_policy_factory(self) -> Callable[["GameConfigs"], PolicyFun]:
+        return self._target_policy_factory.value
+
+    @target_policy_factory.setter
+    def target_policy_factory(self, factory: Callable[["GameConfigs"], PolicyFun]) -> None:
+        self._target_policy_factory.value = factory
+        self._target_policy_factory.frozen = True
+
+    @property
+    def opponent_policy_factory(self) -> Callable[["GameConfigs"], PolicyFun]:
+        return self._opponent_policy_factory.value
+
+    @opponent_policy_factory.setter
+    def opponent_policy_factory(self, factory: Callable[["GameConfigs"], PolicyFun]) -> None:
+        self._opponent_policy_factory.value = factory
+        self._opponent_policy_factory.frozen = True
+
+    @property
+    def target_markov_transition_density_factory(self) -> Callable[["GameConfigs"], MarkovTransitionDensity]:
+        return self._target_markov_transition_density_factory.value
+
+    @target_markov_transition_density_factory.setter
+    def target_markov_transition_density_factory(self, factory: Callable[["GameConfigs"], MarkovTransitionDensity]) -> None:
+        self._target_markov_transition_density_factory.value = factory
+        self._target_markov_transition_density_factory.frozen = True
+
+    @property
+    def opponent_markov_transition_density_factory(self) -> Callable[["GameConfigs"], MarkovTransitionDensity]:
+        return self._opponent_markov_transition_density_factory.value
+
+    @opponent_markov_transition_density_factory.setter
+    def opponent_markov_transition_density_factory(self, factory: Callable[["GameConfigs"], MarkovTransitionDensity]) -> None:
+        self._opponent_markov_transition_density_factory.value = factory
+        self._opponent_markov_transition_density_factory.frozen = True
+
     def _process_line_helper(self, splitted_line: list[str]) -> bool:
         match splitted_line:
             case ["agent", start_x, start_y]:
-                self.agent_start = Vec2D(int(start_x), int(start_y))
+                if not self._agent_start.frozen:
+                    self._agent_start.value = Vec2D(int(start_x), int(start_y))
             case ["target", start_x, start_y]:
-                self.target_start = Vec2D(int(start_x), int(start_y))
+                if not self._target_start.frozen:
+                    self._target_start.value = Vec2D(int(start_x), int(start_y))
             case ["opponent", start_x, start_y]:
-                self.opponent_start = Vec2D(int(start_x), int(start_y))
+                if not self._opponent_start.frozen:
+                    self._opponent_start.value = Vec2D(int(start_x), int(start_y))
             case _:
                 return False
         return True
@@ -150,33 +278,85 @@ class TrainConfigs(BaseConfigs):
 
     def __init__(self) -> None:
         super().__init__()
-        self.reward_factory: Callable[[TrainConfigs], RewardFunction] = lambda c: SimpleRewardFunction()
-        self.max_iter: int = 100
-        self.value_function_tolerance: float = 0.0
-        self.changed_actions_tolerance: int = 0
-        self.changed_actions_percentage_tolerance: float = 0.0
+        self._reward_factory: ConfigArgument[Callable[[TrainConfigs], RewardFunction]] = ConfigArgument(lambda c: SimpleRewardFunction())
+        self._max_iter: ConfigArgument[int] = ConfigArgument(100)
+        self._value_function_tolerance: ConfigArgument[float] = ConfigArgument(0.0)
+        self._changed_actions_tolerance: ConfigArgument[int] = ConfigArgument(0)
+        self._changed_actions_percentage_tolerance: ConfigArgument[float] = ConfigArgument(0.0)
+
+    @property
+    def reward_factory(self) -> Callable[["TrainConfigs"], RewardFunction]:
+        return self._reward_factory.value
+    
+    @reward_factory.setter
+    def reward_factory(self, factory: Callable[["TrainConfigs"], RewardFunction]) -> None:
+        self._reward_factory.value = factory
+        self._reward_factory.frozen = True
+
+    @property
+    def max_iter(self) -> int:
+        return self._max_iter.value
+
+    @max_iter.setter
+    def max_iter(self, value: int) -> None:
+        self._max_iter.value = value
+        self._max_iter.frozen = True
+
+    @property
+    def value_function_tolerance(self) -> float:
+        return self._value_function_tolerance.value
+
+    @value_function_tolerance.setter
+    def value_function_tolerance(self, value: float) -> None:
+        self._value_function_tolerance.value = value
+        self._value_function_tolerance.frozen = True
+
+    @property
+    def changed_actions_tolerance(self) -> int:
+        return self._changed_actions_tolerance.value
+
+    @changed_actions_tolerance.setter
+    def changed_actions_tolerance(self, value: int) -> None:
+        self._changed_actions_tolerance.value = value
+        self._changed_actions_tolerance.frozen = True
+
+    @property
+    def changed_actions_percentage_tolerance(self) -> float:
+        return self._changed_actions_percentage_tolerance.value
+
+    @changed_actions_percentage_tolerance.setter
+    def changed_actions_percentage_tolerance(self, value: float) -> None:
+        self._changed_actions_percentage_tolerance.value = value
+        self._changed_actions_percentage_tolerance.frozen = True
 
     def _process_line_helper(self, splitted_line: list[str]) -> bool:
         match splitted_line:
             case ["maxiter", max_iter]:
-                self.max_iter = int(max_iter)
+                if not self._max_iter.frozen:
+                    self._max_iter.value = int(max_iter)
             case ["valuetolerance", value_tol]:
-                self.value_function_tolerance = float(value_tol)
+                if not self._value_function_tolerance.frozen:
+                    self._value_function_tolerance.value = float(value_tol)
             case ["actiontolerance", action_tol]:
-                self.changed_actions_tolerance = int(action_tol)
+                if not  self._changed_actions_tolerance.frozen:
+                    self._changed_actions_tolerance.value = int(action_tol)
             case ["actionperctolerance", action_perc_tol]:
-                self.changed_actions_percentage_tolerance = float(action_perc_tol)
+                if not self._changed_actions_percentage_tolerance.frozen:
+                    self._changed_actions_percentage_tolerance.value = float(action_perc_tol)
             case _:
                 return False
         return True
 
     def _check_helper(self) -> None:
-        if self.max_iter <= 0:
-            raise ValueError(f"Maximum number of iterations should be > 0.\n" +
-                             f"It was {self.max_iter}")
+        self.__check_positivity(self.max_iter, "Maximum number of iterations")
         self.__check_non_negativity(self.value_function_tolerance, "Value function tolerance")
         self.__check_non_negativity(self.changed_actions_tolerance, "Change actions tolerance")
         self.__check_non_negativity(self.changed_actions_percentage_tolerance, "Changed actions percentage tolerance")
+
+    def __check_positivity(self, value: int | float, name: str) -> None:
+        if value <= 0:
+            raise ValueError(f"{name} should be > 0.\n" +
+                             f"It was {value}")
 
     def __check_non_negativity(self, value: float | int, name: str) -> None:
         if value < 0:

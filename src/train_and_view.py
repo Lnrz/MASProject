@@ -32,11 +32,16 @@ def get_train_configuration(arguments: Namespace) -> TrainConfigs:
   train_configuration: TrainConfigs = TrainConfigs()
   
   train_configuration.configs_file_path = arguments.configs
-  train_configuration.policy_file_path = arguments.policy
-  train_configuration.max_iter = arguments.max_iter
-  train_configuration.value_function_tolerance = arguments.value_function_tolerance
-  train_configuration.changed_actions_tolerance = arguments.changed_actions_tolerance
-  train_configuration.changed_actions_percentage_tolerance = arguments.changed_actions_percentage_tolerance
+  if arguments.policy is not None:
+    train_configuration.policy_file_path = arguments.policy
+  if arguments.max_iter is not None:
+    train_configuration.max_iter = arguments.max_iter
+  if arguments.value_function_tolerance is not None:
+    train_configuration.value_function_tolerance = arguments.value_function_tolerance
+  if arguments.changed_actions_tolerance is not None:
+    train_configuration.changed_actions_tolerance = arguments.changed_actions_tolerance
+  if arguments.changed_actions_percentage_tolerance is not None:
+    train_configuration.changed_actions_percentage_tolerance = arguments.changed_actions_percentage_tolerance
   
   return train_configuration
 

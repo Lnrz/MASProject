@@ -42,7 +42,8 @@ def get_game_configuration(arguments: Namespace) -> GameConfigs:
   game_configuration: GameConfigs = GameConfigs()
   
   game_configuration.configs_file_path = arguments.configs
-  game_configuration.policy_file_path = arguments.policy
+  if arguments.policy is not None:
+    game_configuration.policy_file_path = arguments.policy
   if arguments.agent_start is not None:
     game_configuration.agent_start = string_to_vec2D(arguments.agent_start)
   if arguments.target_start is not None:
