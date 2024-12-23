@@ -39,7 +39,7 @@ class SimpleMarkovTransitionDensity(MarkovTransitionDensity):
 
 
 
-def manhattan_distance(point_a: Vec2D, point_b: Vec2D):
+def manhattan_distance(point_a: Vec2D, point_b: Vec2D) -> int:
     return abs(point_a.x - point_b.x) + abs(point_a.y - point_b.y)
 
 class RewardFunction(ABC):

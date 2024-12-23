@@ -31,9 +31,7 @@ def get_command_line_arguments() ->  Namespace:
   return parser.parse_args()
 
 
-def string_to_vec2D(string: str | None) -> Vec2D:
-  if string is None:
-    return None
+def string_to_vec2D(string: str) -> Vec2D:
   match: re.Match[str] | None = re.search(r"\((\d+),(\d+)\)", string)
   if match is None:
     raise ValueError(f"A str to convert to Vec2D was ill-formed.\n" + 
@@ -45,9 +43,12 @@ def get_game_configuration(arguments: Namespace) -> GameConfigs:
   
   game_configuration.configs_file_path = arguments.configs
   game_configuration.policy_file_path = arguments.policy
-  game_configuration.agent_start = string_to_vec2D(arguments.agent_start)
-  game_configuration.target_start = string_to_vec2D(arguments.target_start)
-  game_configuration.opponent_start = string_to_vec2D(arguments.opponent_start)
+  if arguments.agent_start is not None:
+    game_configuration.agent_start = string_to_vec2D(arguments.agent_start)
+  if arguments.target_start is not None:
+    game_configuration.target_start = string_to_vec2D(arguments.target_start)
+  if arguments.opponent_start is not None:
+    game_configuration.opponent_start = string_to_vec2D(arguments.opponent_start)
   
   return game_configuration
 
