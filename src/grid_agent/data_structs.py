@@ -251,11 +251,10 @@ class ValidStateSpace:
             return self.is_valid(obj)
         raise TypeError(f"ValidStateSpace expected int or State, but was {type(obj)}")
 
-@final
 class Policy:
 
     @classmethod
-    def from_file(cls, policy_file_name: str) -> Self:
+    def from_file(cls, policy_file_name: str) -> "Policy":
         p: Policy = Policy()
         with open(policy_file_name, "rb") as f:
             policy_size: int = f.seek(0, 2)
@@ -264,7 +263,7 @@ class Policy:
         return p
 
     @classmethod
-    def from_action(cls, policy_size: int, action: Action = Action.UP) -> Self:
+    def from_action(cls, policy_size: int, action: Action = Action.UP) -> "Policy":
         p: Policy = Policy()
         p.__arr.fromlist([action.value for i in range(policy_size)])
         return p
