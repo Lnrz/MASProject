@@ -128,7 +128,7 @@ class TrainManager:
         self.__update_policy()
 
     def __update_value_function(self) -> None:
-        for (index, state) in self.__valid_states_space:
+        for index, state in enumerate(self.__valid_states_space):
             action: Action = self.__policy.get_action(index)
             new_value: float = self.__calculate_new_value_function_value(state, action)
             old_value: float = self.__value_functions_container.get_current_value(index)
@@ -154,7 +154,7 @@ class TrainManager:
                 self.__discount_factor * sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
     
     def __update_policy(self) -> None:
-        for (index, state) in self.__valid_states_space:
+        for index, state in enumerate(self.__valid_states_space):
             new_action: Action = self.__calculate_new_policy_action(state)
             old_action: Action = self.__policy.get_action(index)
             if new_action != old_action:

@@ -153,12 +153,12 @@ class ValidStateSpaceIterator:
         self.__current_index: int = -1
         self.__state: State = State()
 
-    def __next__(self) -> tuple[int, State]:
+    def __next__(self) -> State:
         self.__current_index += 1
         if self.__current_index == self.__space_size:
             raise StopIteration()
         self.__state.from_index(self.__array[self.__current_index], self.__map_size)
-        return (self.__current_index, self.__state)
+        return self.__state
 
 class ValidStateSpace:
 
