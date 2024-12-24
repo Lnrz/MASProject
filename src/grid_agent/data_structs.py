@@ -108,10 +108,10 @@ class State:
 
     def next_state(self, map_size: MapSize) -> bool:
         if self.__next_pos(self.agent_pos, map_size):
-            return False
+            return True
         if self.__next_pos(self.opponent_pos, map_size):
-            return False
-        return not self.__next_pos(self.target_pos, map_size)
+            return True
+        return self.__next_pos(self.target_pos, map_size)
 
     def __next_pos(self, pos: Vec2D, map_size: MapSize) -> bool:
         pos.x += 1
@@ -167,7 +167,7 @@ class ValidStateSpace:
         self.space_size: int = 0
         index_list: list[int] = []
         state: State = State()
-        while (not state.next_state(self.__map_size)):
+        while state.next_state(self.__map_size):
             if self.__is_state_valid(state, obstacles):
                 index_list.append(state.to_index(self.__map_size))
                 self.space_size += 1
