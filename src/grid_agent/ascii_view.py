@@ -1,4 +1,4 @@
-from grid_agent.data_structs import GameData, Obstacle, Vec2D, Action, Result
+from grid_agent.data_structs import GameData, Obstacle, Vec2D, Action
 from typing import Callable, Any
 from time import sleep
 

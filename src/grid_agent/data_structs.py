@@ -1,7 +1,7 @@
-from enum import IntEnum
 from dataclasses import dataclass, field
+from enum import IntEnum
 from array import array
-from typing import Self, final
+from typing import Self
 
 class Result(IntEnum):
     FAIL = 0,
