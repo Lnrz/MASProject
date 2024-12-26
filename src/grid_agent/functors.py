@@ -15,12 +15,12 @@ class UniformPolicy(PolicyFun):
 
 class AgentPolicy(PolicyFun):
 
-    def __init__(self, policy_file_path: str, valid_state_space: ValidStateSpace) -> None:
-        self.__policy: Policy = Policy.from_file(policy_file_path)
+    def __init__(self, policy: Policy, valid_state_space: ValidStateSpace) -> None:
+        self.__policy: Policy = policy
         self.__valid_state_space: ValidStateSpace = valid_state_space
 
     def __call__(self, state: State) -> Action:
-        return self.__policy.get_action(self.__valid_state_space.get_index(state))
+        return self.__policy.get_action(self.__valid_state_space.get_valid_index(state))
 
 
 
@@ -35,7 +35,7 @@ class SimpleMarkovTransitionDensity(MarkovTransitionDensity):
     __action_distribution: list[float] = [0.9, 0.05, 0.0, 0.05]
 
     def __call__(self, chosen_action: Action, action: Action) -> float:
-        return self.__action_distribution[(action.value - chosen_action.value) % Action.MAX_EXCLUSIVE.value]
+        return self.__action_distribution[(action - chosen_action) % Action.MAX_EXCLUSIVE]
 
 
 

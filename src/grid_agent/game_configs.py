@@ -1,104 +1,94 @@
 from grid_agent.functors import PolicyFun, AgentPolicy, UniformPolicy, MarkovTransitionDensity, SimpleMarkovTransitionDensity
+from grid_agent.data_structs import  Vec2D, PolicySequential, ValidStateSpace, ValidStateSpaceSequential
 from grid_agent.base_configs import BaseConfigs, ConfigArgument
-from grid_agent.data_structs import  Vec2D
+
 from typing import Callable
 
 class GameConfigs(BaseConfigs):
 
     def __init__(self) -> None:
         super().__init__()
-        self._agent_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
-        self._target_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
-        self._opponent_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
-        self._agent_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: AgentPolicy(c.policy_file_path, c.valid_state_space))
-        self._target_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: UniformPolicy())
-        self._opponent_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: UniformPolicy())
-        self._target_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
-        self._opponent_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
+        self.__agent_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
+        self.__target_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
+        self.__opponent_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
+        self.__agent_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: AgentPolicy(PolicySequential.from_file(c.policy_file_path), c.valid_state_space))
+        self.__target_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: UniformPolicy())
+        self.__opponent_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: UniformPolicy())
+        self.__target_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
+        self.__opponent_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
     
     @property
     def agent_start(self) -> Vec2D:
-        return self._agent_start.value
+        return self.__agent_start.value
 
     @agent_start.setter
     def agent_start(self, start: Vec2D) -> None:
-        self._agent_start.value = start
-        self._agent_start.frozen = True
+        self.__agent_start.set_and_freeze(start)
 
     @property
     def target_start(self) -> Vec2D:
-        return self._target_start.value
+        return self.__target_start.value
 
     @target_start.setter
     def target_start(self, start: Vec2D) -> None:
-        self._target_start.value = start
-        self._target_start.frozen = True
+        self.__target_start.set_and_freeze(start)
 
     @property
     def opponent_start(self) -> Vec2D:
-        return self._opponent_start.value
+        return self.__opponent_start.value
 
     @opponent_start.setter
     def opponent_start(self, start: Vec2D) -> None:
-        self._opponent_start.value = start
-        self._opponent_start.frozen = True
+        self.__opponent_start.set_and_freeze(start)
 
     @property
     def agent_policy_factory(self) -> Callable[["GameConfigs"], PolicyFun]:
-        return self._agent_policy_factory.value
+        return self.__agent_policy_factory.value
 
     @agent_policy_factory.setter
     def agent_policy_factory(self, factory: Callable[["GameConfigs"], PolicyFun]) -> None:
-        self._agent_policy_factory.value = factory
-        self._agent_policy_factory.frozen = True
+        self.__agent_policy_factory.set_and_freeze(factory)
 
     @property
     def target_policy_factory(self) -> Callable[["GameConfigs"], PolicyFun]:
-        return self._target_policy_factory.value
+        return self.__target_policy_factory.value
 
     @target_policy_factory.setter
     def target_policy_factory(self, factory: Callable[["GameConfigs"], PolicyFun]) -> None:
-        self._target_policy_factory.value = factory
-        self._target_policy_factory.frozen = True
+        self.__target_policy_factory.set_and_freeze(factory)
 
     @property
     def opponent_policy_factory(self) -> Callable[["GameConfigs"], PolicyFun]:
-        return self._opponent_policy_factory.value
+        return self.__opponent_policy_factory.value
 
     @opponent_policy_factory.setter
     def opponent_policy_factory(self, factory: Callable[["GameConfigs"], PolicyFun]) -> None:
-        self._opponent_policy_factory.value = factory
-        self._opponent_policy_factory.frozen = True
+        self.__opponent_policy_factory.set_and_freeze(factory)
 
     @property
     def target_markov_transition_density_factory(self) -> Callable[["GameConfigs"], MarkovTransitionDensity]:
-        return self._target_markov_transition_density_factory.value
+        return self.__target_markov_transition_density_factory.value
 
     @target_markov_transition_density_factory.setter
     def target_markov_transition_density_factory(self, factory: Callable[["GameConfigs"], MarkovTransitionDensity]) -> None:
-        self._target_markov_transition_density_factory.value = factory
-        self._target_markov_transition_density_factory.frozen = True
+        self.__target_markov_transition_density_factory.set_and_freeze(factory)
 
     @property
     def opponent_markov_transition_density_factory(self) -> Callable[["GameConfigs"], MarkovTransitionDensity]:
-        return self._opponent_markov_transition_density_factory.value
+        return self.__opponent_markov_transition_density_factory.value
 
     @opponent_markov_transition_density_factory.setter
     def opponent_markov_transition_density_factory(self, factory: Callable[["GameConfigs"], MarkovTransitionDensity]) -> None:
-        self._opponent_markov_transition_density_factory.value = factory
-        self._opponent_markov_transition_density_factory.frozen = True
+        self.__opponent_markov_transition_density_factory.set_and_freeze(factory)
 
     def _process_line_helper(self, splitted_line: list[str]) -> bool:
         match splitted_line:
             case ["agent", start_x, start_y]:
-                if not self._agent_start.frozen:
-                    self._agent_start.value = Vec2D(int(start_x), int(start_y))
+                self.__agent_start.set_if_not_frozen(Vec2D(int(start_x), int(start_y)))
             case ["target", start_x, start_y]:
-                if not self._target_start.frozen:
-                    self._target_start.value = Vec2D(int(start_x), int(start_y))
+                self.__target_start.set_if_not_frozen(Vec2D(int(start_x), int(start_y)))
             case ["opponent", start_x, start_y]:
-                if not self._opponent_start.frozen:
-                    self._opponent_start.value = Vec2D(int(start_x), int(start_y))
+                self.__opponent_start.set_if_not_frozen(Vec2D(int(start_x), int(start_y)))
             case _:
                 return False
         return True
@@ -135,6 +125,7 @@ class GameConfigs(BaseConfigs):
                                  + f"Obstacle: [origin: ({obstacle.origin.x}, {obstacle.origin.y}), extent: ({obstacle.extent.x}, {obstacle.extent.y})]")
 
     def _create_helper(self) -> None:
+        self.valid_state_space: ValidStateSpace = ValidStateSpaceSequential(self.map_size, self.obstacles)
         self.target_markov_transition_density: MarkovTransitionDensity = self.target_markov_transition_density_factory(self)
         self.opponent_markov_transition_density: MarkovTransitionDensity = self.opponent_markov_transition_density_factory(self)
         self.agent_policy: PolicyFun = self.agent_policy_factory(self)

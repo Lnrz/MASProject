@@ -1,5 +1,6 @@
 from grid_agent.functors import MarkovTransitionDensity, SimpleMarkovTransitionDensity
-from grid_agent.data_structs import Vec2D, Obstacle, ValidStateSpace
+from grid_agent.data_structs import Vec2D, Obstacle
+
 from abc import ABC, abstractmethod
 from typing import Callable
 
@@ -8,61 +9,68 @@ class  ConfigArgument[T]:
     def __init__(self, value: T) -> None:
         self.value: T = value
         self.frozen: bool = False
+    
+    def set_and_freeze(self, value: T) -> None:
+        if isinstance(value, type(self.value)):
+            self.value = value
+            self.frozen = True
+        else:
+            print(f"ConfigArgument not updated with {value}\n" +
+                  f"Expected {type(self.value)}, but got {type(value)}")
+
+    def set_if_not_frozen(self, value: T) -> None:
+        if not self.frozen:
+            self.value = value
 
 class BaseConfigs(ABC):
 
     def __init__(self) -> None:
-        self._configs_file_path: ConfigArgument[str] = ConfigArgument("")
-        self._policy_file_path: ConfigArgument[str] = ConfigArgument("")
-        self._map_size: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
-        self._obstacles: ConfigArgument[list[Obstacle]]  = ConfigArgument([])
-        self._agent_markov_transition_density_factory: ConfigArgument[Callable[[BaseConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
+        self.__configs_file_path: ConfigArgument[str] = ConfigArgument("")
+        self.__policy_file_path: ConfigArgument[str] = ConfigArgument("")
+        self.__map_size: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
+        self.__obstacles: ConfigArgument[list[Obstacle]]  = ConfigArgument([])
+        self.__agent_markov_transition_density_factory: ConfigArgument[Callable[[BaseConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
         self.line_processing_extension: Callable[[BaseConfigs, list[str]], None] = lambda c, l: None
 
     @property
     def configs_file_path(self) -> str:
-        return self._configs_file_path.value
+        return self.__configs_file_path.value
 
     @configs_file_path.setter
     def configs_file_path(self, path: str) -> None:
-        self._configs_file_path.value = path
-        self._configs_file_path.frozen = True
+        self.__configs_file_path.set_and_freeze(path)
 
     @property
     def policy_file_path(self) -> str:
-        return self._policy_file_path.value
+        return self.__policy_file_path.value
 
     @policy_file_path.setter
     def policy_file_path(self, path: str) -> None:
-        self._policy_file_path.value = path
-        self._policy_file_path.frozen = True
+        self.__policy_file_path.set_and_freeze(path)
 
     @property
     def map_size(self) -> Vec2D:
-        return self._map_size.value
+        return self.__map_size.value
 
     @map_size.setter
     def map_size(self, map_size: Vec2D) -> None:
-        self._map_size.value = map_size
-        self._map_size.frozen = True
+        self.__map_size.set_and_freeze(map_size)
 
     @property
     def obstacles(self) -> list[Obstacle]:
-        return self._obstacles.value
+        return self.__obstacles.value
 
     @obstacles.setter
     def obstacles(self, obstacles: list[Obstacle]) -> None:
-        self._obstacles.value = obstacles
-        self._obstacles.frozen = True
+        self.__obstacles.set_and_freeze(obstacles)
 
     @property
     def agent_markov_transition_density_factory(self) -> Callable[["BaseConfigs"], MarkovTransitionDensity]:
-        return self._agent_markov_transition_density_factory.value
+        return self.__agent_markov_transition_density_factory.value
 
     @agent_markov_transition_density_factory.setter
     def agent_markov_transition_density_factory(self, factory: Callable[["BaseConfigs"], MarkovTransitionDensity]) -> None:
-        self._agent_markov_transition_density_factory.value = factory
-        self._agent_markov_transition_density_factory.frozen = True
+        self.__agent_markov_transition_density_factory.set_and_freeze(factory)
 
     def validate(self) -> None:
         self.__apply_file()
@@ -86,14 +94,12 @@ class BaseConfigs(ABC):
         has_match: bool = True
         match splitted_line:
             case ["mapsize", map_x_length, map_y_length]:
-                if not self._map_size.frozen:
-                    self._map_size.value = Vec2D(int(map_x_length), int(map_y_length))
+                self.__map_size.set_if_not_frozen(Vec2D(int(map_x_length), int(map_y_length)))
             case ["obstacle", origin_x, origin_y, extent_x, extent_y]:
-                if not self._obstacles.frozen:
-                    self._obstacles.value.append(Obstacle(Vec2D(int(origin_x), int(origin_y)), Vec2D(int(extent_x), int(extent_y))))
+                if not self.__obstacles.frozen:
+                    self.__obstacles.value.append(Obstacle(Vec2D(int(origin_x), int(origin_y)), Vec2D(int(extent_x), int(extent_y))))
             case ["policy", policy_path]:
-                if not self._policy_file_path.frozen:
-                    self._policy_file_path.value = policy_path
+                self.__policy_file_path.set_if_not_frozen(policy_path)
             case _:
                 has_match = False
         if not has_match:
@@ -128,7 +134,6 @@ class BaseConfigs(ABC):
                                  f"Map was {self.map_size.x}x{self.map_size.y}")
 
     def __create(self) -> None:
-        self.valid_state_space: ValidStateSpace = ValidStateSpace(self.map_size, self.obstacles)
         self.agent_markov_transition_density: MarkovTransitionDensity = self.agent_markov_transition_density_factory(self)
         self._create_helper()
 
