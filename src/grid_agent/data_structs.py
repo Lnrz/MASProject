@@ -2,13 +2,13 @@ from collections.abc import Iterable, Sequence
 from  collections import OrderedDict
 
 from ctypes import c_bool, c_ubyte, c_ushort, c_ulong, c_ulonglong, c_float, c_double, Array
+from typing import Self, Protocol, overload
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import multiprocessing as mp
 from itertools import repeat
 from enum import IntEnum
 from array import array
-from typing import Self
 
 class Result(IntEnum):
     FAIL = 0,
@@ -167,17 +167,24 @@ class TrainData:
     changed_actions_number: int = 0
     changed_actions_percentage: float = 0.0
 
+class ValidStateSpaceArray(Protocol):
+
+    @overload
+    def __getitem__(self, index: int) -> int:
+        ...
+    
+    @overload
+    def __getitem__(self, slice: slice) -> Sequence[int]:
+        ...
+
 class ValidStateSpaceIterator:
 
-    def __init__(self, states: Sequence[int], space_size: int, map_size: MapSize, reversed: bool) -> None:
-        self.__collection: Sequence[int] = states
+    def __init__(self, states: ValidStateSpaceArray, space_size: int, map_size: MapSize, reversed: bool) -> None:
+        self.__array: ValidStateSpaceArray = states
         self.__space_size: int = space_size
         self.__map_size: MapSize = map_size
         self.__reversed: bool = reversed
-        if not reversed:
-            self.__current_index: int = 0
-        else:
-            self.__current_index: int = space_size - 1
+        self.__current_index: int = space_size - 1 if reversed else 0
         self.__state: State = State()
 
     def __iter__(self) -> "ValidStateSpaceIterator":
@@ -187,7 +194,7 @@ class ValidStateSpaceIterator:
         if ((not self.__reversed and self.__current_index == self.__space_size) or
             (self.__reversed and self.__current_index == -1)):
             raise StopIteration()
-        self.__state.from_index(self.__collection[self.__current_index], self.__map_size)
+        self.__state.from_index(self.__array[self.__current_index], self.__map_size)
         if not self.__reversed:
             self.__current_index += 1
         else:
@@ -210,12 +217,12 @@ class ValidStateSpace(ABC):
             if self.__is_state_valid(state, obstacles):
                 index_list.append(state_index)
                 self.space_size += 1
-        type: tuple[str, c_ubyte | c_ushort | c_ulong | c_ulonglong] = self.__select_type(self.space_size)
-        self.type = type[1]
-        self.__sequence: Sequence[int] = self._get_collection(index_list, type[0])
+        types: tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]] = self.__select_type(self.space_size)
+        self.type: type[c_ubyte | c_ushort | c_ulong | c_ulonglong] = types[1]
+        self.__array: ValidStateSpaceArray = self._get_collection(index_list, types)
 
     @abstractmethod
-    def _get_collection(self, indices: list[int], type_char: str) -> Sequence[int]:
+    def _get_collection(self, indices: list[int], types: tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]]) -> ValidStateSpaceArray:
         ...
 
     def get_valid_index(self, state: State) -> int:
@@ -248,24 +255,24 @@ class ValidStateSpace(ABC):
 
     def __add_to_valid_cache(self, state_index: int, valid_state_index: int) -> None:
         self.__valid_cache[state_index] = valid_state_index
-        self.__load_near_states_to_cache(state_index, valid_state_index, False)
+        self.__load_near_states_to_cache(state_index, valid_state_index, True)
         if len(self.__valid_cache) == self.__max_cache_length:
             self.__valid_cache.popitem(last=False)
 
     def __add_to_not_valid_cache(self, state_index: int, last_smaller_valid_index: int) -> None:
         self.__not_valid_cache[state_index] = last_smaller_valid_index
-        self.__load_near_states_to_cache(state_index, last_smaller_valid_index, True)
+        self.__load_near_states_to_cache(state_index, last_smaller_valid_index, False)
         if len(self.__not_valid_cache) == self.__max_cache_length:
             self.__not_valid_cache.popitem(last=False)
 
-    def __load_near_states_to_cache(self, state_index: int, valid_state_index: int, index_not_valid: bool) -> None:
-        prev_valid_state_index: int = valid_state_index - 1 if not index_not_valid else valid_state_index
+    def __load_near_states_to_cache(self, state_index: int, valid_state_index: int, is_state_valid: bool) -> None:
+        prev_valid_state_index: int = valid_state_index - 1 if is_state_valid else valid_state_index
         prev_state_index: int = state_index - 1
         next_valid_state_index: int = valid_state_index + 1
         next_state_index: int = state_index + 1
         
         if prev_valid_state_index > -1:
-            prev_state_index_found: int = self.__sequence[prev_valid_state_index]
+            prev_state_index_found: int = self.__array[prev_valid_state_index]
             if prev_state_index_found == prev_state_index:
                 self.__valid_cache[prev_state_index] = prev_valid_state_index
             else:
@@ -276,7 +283,7 @@ class ValidStateSpace(ABC):
             self.__not_valid_cache[prev_state_index] = prev_valid_state_index
         
         if next_valid_state_index < self.space_size:
-            next_state_index_found: int = self.__sequence[next_valid_state_index]
+            next_state_index_found: int = self.__array[next_valid_state_index]
             if next_state_index_found == next_state_index:
                 self.__valid_cache[next_state_index] = next_valid_state_index
             else:
@@ -292,9 +299,9 @@ class ValidStateSpace(ABC):
             self.__not_valid_cache.popitem(last=False)
 
     def copy_valid_state_to(self, state: State, index: int) -> None:
-        state.from_index(self.__sequence[index], self.map_size)
+        state.from_index(self.__array[index], self.map_size)
 
-    def __select_type(self, number_of_states: int) -> tuple[str, c_ubyte | c_ushort | c_ulong | c_ulonglong]:
+    def __select_type(self, number_of_states: int) -> tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]]:
         match number_of_states:
             case n if n <= 2 ** 8:
                 return ("B",  c_ubyte)
@@ -310,7 +317,7 @@ class ValidStateSpace(ABC):
         j: int = self.space_size - 1
         while i <= j:
             k: int = (i + j) // 2
-            retrieved_index: int = self.__sequence[k]
+            retrieved_index: int = self.__array[k]
             if retrieved_index == state_index:
                 return (True, k)
             elif retrieved_index < state_index:
@@ -339,16 +346,16 @@ class ValidStateSpace(ABC):
                 pos.y > -1 and pos.y < self.map_size.M)
 
     def __iter__(self) -> ValidStateSpaceIterator:
-        return ValidStateSpaceIterator(self.__sequence, self.space_size, self.map_size, False)
+        return ValidStateSpaceIterator(self.__array, self.space_size, self.map_size, False)
     
     def __reversed__(self) -> ValidStateSpaceIterator:
-        return ValidStateSpaceIterator(self.__sequence, self.space_size, self.map_size, True)
+        return ValidStateSpaceIterator(self.__array, self.space_size, self.map_size, True)
 
     def __len__(self) -> int:
         return self.space_size
     
-    def __getitem__(self, index: int | slice) -> State | list[State]:
-        state_indices: int | Sequence[int] = self.__sequence[index]
+    def __getitem__(self, index: int | slice) -> State | Sequence[State]:
+        state_indices: int | Sequence[int] = self.__array[index]
         if isinstance(state_indices, int):
             state: State = State()
             state.from_index(state_indices, self.map_size)
@@ -362,18 +369,18 @@ class ValidStateSpace(ABC):
         if isinstance(obj, int):
             return self.__binary_search(obj)[0]
         if isinstance(obj, State):
-            return self.is_state_outside_obstacles(obj)
+            return self.is_state_within_bounds(obj) and self.is_state_outside_obstacles(obj)
         return False
 
 class ValidStateSpaceSequential(ValidStateSpace):
 
-    def _get_collection(self, indices: list[int], type_char: str) -> Sequence[int]:
-        return array(type_char, indices)
+    def _get_collection(self, indices: list[int], types: tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]]) -> ValidStateSpaceArray:
+        return array(types[0], indices)
 
 class ValidStateSpaceParallel(ValidStateSpace):
 
-    def _get_collection(self, indices: list[int], type_char: str) -> Sequence[int]:
-        return mp.RawArray(type_char, indices)
+    def _get_collection(self, indices: list[int], types: tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]]) -> ValidStateSpaceArray:
+        return mp.RawArray(types[1], indices)
 
 class Policy(ABC):
     
@@ -419,7 +426,7 @@ class PolicyParallel(Policy):
 class ValueFunctionsContainer(ABC):
 
     @abstractmethod
-    def get_type(self) -> c_ubyte | c_ushort | c_ulong | c_ulonglong:
+    def get_type(self) -> type[c_float | c_double]:
         ...
 
     @abstractmethod
@@ -437,12 +444,12 @@ class ValueFunctionsContainer(ABC):
 class ValueFunctionsContainerSequential(ValueFunctionsContainer):
 
     def __init__(self, size: int, start_value: float = 0.0, use_double: bool = True) -> None:
-        self.__type: c_float | c_double = c_double if use_double else c_float
+        self.__type: type[c_float | c_double] = c_double if use_double else c_float
         type_char: str = "d" if use_double else "f"
         self.__old_values: array[float] = array(type_char, repeat(start_value, size))
         self.__new_values: array[float] = array(type_char, repeat(start_value, size))
 
-    def get_type(self) -> c_ubyte | c_ushort | c_ulong | c_ulonglong:
+    def get_type(self) -> type[c_float | c_double]:
         return self.__type
 
     def get_current_value(self, index: int) -> float:
@@ -456,14 +463,14 @@ class ValueFunctionsContainerSequential(ValueFunctionsContainer):
 
 class ValueFunctionsContainerParallel(ValueFunctionsContainer):
 
-    def __init__(self, size: int, start_value: float = 0.0, use_double = True) -> None:
-        self.__type: c_float | c_double = c_double if use_double else c_float
+    def __init__(self, size: int, start_value: float = 0.0, use_double: bool = True) -> None:
+        self.__type: type[c_float | c_double] = c_double if use_double else c_float
         values: list[float] = [value for value in repeat(start_value, size)]
         self.__array_a: Array[c_float | c_double] = mp.RawArray(self.__type, values)
         self.__array_b: Array[c_float | c_double] = mp.RawArray(self.__type, values)
         self.__swapped: c_bool = mp.RawValue(c_bool, False)
 
-    def get_type(self) -> c_ubyte | c_ushort | c_ulong | c_ulonglong:
+    def get_type(self) -> type[c_float | c_double]:
         return self.__type
 
     def get_current_value(self, index: int) -> float:

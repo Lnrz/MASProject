@@ -123,7 +123,7 @@ class TrainManager:
 
     def __init_parallel(self, train_configuration: TrainConfigs) -> None:
         context: DefaultContext = mp.get_context()
-        value_type: c_float | c_double = train_configuration.value_functions_container.get_type()
+        value_type: type[c_float | c_double] = train_configuration.value_functions_container.get_type()
         self.__valid_state_space_size: int = train_configuration.valid_state_space.space_size
         self.__shared_data: ProcessSharedData = ProcessSharedData(
             valid_state_space= train_configuration.valid_state_space,
@@ -244,7 +244,7 @@ class TrainManager:
         is_valid: bool = state.move_checking_bounds(state.agent_pos, action, self.__valid_states_space.map_size)
         if not is_valid:
             return -math.inf
-        is_valid: bool = self.__valid_states_space.is_state_outside_obstacles(state)
+        is_valid = self.__valid_states_space.is_state_outside_obstacles(state)
         state.agent_pos.undo(action)
         if not is_valid:
             return -math.inf

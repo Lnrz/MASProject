@@ -118,7 +118,7 @@ class TrainConfigs(BaseConfigs):
         self.__check_non_negativity(self.changed_actions_tolerance, "Change actions tolerance")
         self.__check_non_negativity(self.changed_actions_percentage_tolerance, "Changed actions percentage tolerance")
 
-    def __check_between_zero_and_one(self, value: float, name: str):
+    def __check_between_zero_and_one(self, value: float, name: str) -> None:
         if value < 0 or value > 1:
             raise ValueError(f"{name} should be between 0 and 1\n" +
                              f"It was {value}")
