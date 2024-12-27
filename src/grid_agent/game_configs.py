@@ -3,6 +3,7 @@ from grid_agent.data_structs import  Vec2D, PolicySequential, ValidStateSpace, V
 from grid_agent.base_configs import BaseConfigs, ConfigArgument
 
 from collections.abc import Callable
+from typing import override
 
 class GameConfigs(BaseConfigs):
 
@@ -81,6 +82,7 @@ class GameConfigs(BaseConfigs):
     def opponent_markov_transition_density_factory(self, factory: Callable[["GameConfigs"], MarkovTransitionDensity]) -> None:
         self.__opponent_markov_transition_density_factory.set_and_freeze(factory)
 
+    @override
     def _process_line_helper(self, splitted_line: list[str]) -> bool:
         match splitted_line:
             case ["agent", start_x, start_y]:
@@ -93,6 +95,7 @@ class GameConfigs(BaseConfigs):
                 return False
         return True
 
+    @override
     def _check_helper(self) -> None:
         self.__check_for_same_starting_position("Agent", self.agent_start, "Target", self.target_start)
         self.__check_for_same_starting_position("Agent", self.agent_start, "Opponent", self.opponent_start)
@@ -124,6 +127,7 @@ class GameConfigs(BaseConfigs):
                                  + f"{name}: ({pos.x}, {pos.y})\n"
                                  + f"Obstacle: [origin: ({obstacle.origin.x}, {obstacle.origin.y}), extent: ({obstacle.extent.x}, {obstacle.extent.y})]")
 
+    @override
     def _create_helper(self) -> None:
         self.valid_state_space: ValidStateSpace = ValidStateSpaceSequential(self.map_size, self.obstacles)
         self.target_markov_transition_density: MarkovTransitionDensity = self.target_markov_transition_density_factory(self)

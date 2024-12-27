@@ -1,5 +1,6 @@
 from grid_agent.data_structs import Action, State, Policy, ValidStateSpace, Vec2D
 from abc import ABC, abstractmethod
+from typing import override
 import random as rnd
 
 class PolicyFun(ABC):
@@ -10,6 +11,7 @@ class PolicyFun(ABC):
 
 class UniformPolicy(PolicyFun):
 
+    @override
     def __call__(self, state: State) -> Action:
         return Action(rnd.randrange(Action.MAX_EXCLUSIVE))
 
@@ -19,6 +21,7 @@ class AgentPolicy(PolicyFun):
         self.__policy: Policy = policy
         self.__valid_state_space: ValidStateSpace = valid_state_space
 
+    @override
     def __call__(self, state: State) -> Action:
         return self.__policy.get_action(self.__valid_state_space.get_valid_index(state))
 
@@ -34,6 +37,7 @@ class SimpleMarkovTransitionDensity(MarkovTransitionDensity):
 
     __action_distribution: list[float] = [0.9, 0.05, 0.0, 0.05]
 
+    @override
     def __call__(self, chosen_action: Action, action: Action) -> float:
         return self.__action_distribution[(action - chosen_action) % Action.MAX_EXCLUSIVE]
 
@@ -50,6 +54,7 @@ class RewardFunction(ABC):
 
 class SimpleRewardFunction(RewardFunction):
 
+    @override
     def __call__(self, state: State, next_state: State) -> float:
         if state.agent_pos == state.target_pos:
             return 1.0

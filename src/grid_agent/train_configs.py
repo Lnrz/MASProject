@@ -3,6 +3,7 @@ from grid_agent.functors import RewardFunction, SimpleRewardFunction
 from grid_agent.base_configs import BaseConfigs, ConfigArgument
 
 from collections.abc import Callable
+from typing import override
 
 class TrainConfigs(BaseConfigs):
 
@@ -90,6 +91,7 @@ class TrainConfigs(BaseConfigs):
     def changed_actions_percentage_tolerance(self, value: float) -> None:
         self.__changed_actions_percentage_tolerance.set_and_freeze(value)
 
+    @override
     def _process_line_helper(self, splitted_line: list[str]) -> bool:
         match splitted_line:
             case ["maxiter", max_iter]:
@@ -110,6 +112,7 @@ class TrainConfigs(BaseConfigs):
                 return False
         return True
 
+    @override
     def _check_helper(self) -> None:
         self.__check_positivity(self.max_iter, "Maximum number of iterations")
         self.__check_positivity(self.processes_number, "Number of processes")
@@ -133,6 +136,7 @@ class TrainConfigs(BaseConfigs):
             raise ValueError(f"{name} should be >= 0" +
                              f"It was {value}")
 
+    @override
     def _create_helper(self) -> None:
         self.reward: RewardFunction = self.reward_factory(self)
         self.policy: Policy
