@@ -1,5 +1,5 @@
-from argparse import ArgumentParser, Namespace
 from grid_agent.train_view import TrainDataView
+from argparse import ArgumentParser, Namespace
 
 def main() -> None:
     arguments: Namespace = get_command_line_arguments()

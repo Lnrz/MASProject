@@ -1,10 +1,11 @@
 from matplotlib.ticker import PercentFormatter, MaxNLocator
-from grid_agent.data_structs import TrainData
 from matplotlib.figure import Figure
 from matplotlib.artist import Artist
-from typing import Callable, Any
 from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
+
+from grid_agent.data_structs import TrainData
+from typing import Callable, Any
 import json
 
 class TrainDataView:

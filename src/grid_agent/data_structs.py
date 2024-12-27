@@ -200,14 +200,11 @@ class ValidStateSpaceIterator:
         return self
 
     def __next__(self) -> State:
-        if ((not self.__reversed and self.__current_index == self.__space_size) or
-            (self.__reversed and self.__current_index == -1)):
+        if (self.__current_index == self.__space_size or
+            self.__current_index == -1):
             raise StopIteration()
         self.__state.from_index(self.__array[self.__current_index], self.__map_size)
-        if not self.__reversed:
-            self.__current_index += 1
-        else:
-            self.__current_index -= 1
+        self.__current_index = self.__current_index - 1 if self.__reversed else self.__current_index + 1
         return self.__state
 
 class ValidStateSpace(ABC):

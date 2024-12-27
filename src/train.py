@@ -1,6 +1,7 @@
-from argparse import ArgumentParser, Namespace
 from grid_agent.train_configs import TrainConfigs
 from grid_agent.entities import TrainManager
+
+from argparse import ArgumentParser, Namespace
 
 def main() -> None:
     arguments: Namespace = get_command_line_arguments()

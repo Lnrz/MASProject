@@ -1,8 +1,9 @@
-from argparse import ArgumentParser, Namespace
 from grid_agent.data_structs import Vec2D
 from grid_agent.game_configs import GameConfigs
 from grid_agent.entities import GameManager
 from grid_agent.ascii_view import ASCIIView
+
+from argparse import ArgumentParser, Namespace
 import re
 
 def main() -> None:
