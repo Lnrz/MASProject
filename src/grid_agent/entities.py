@@ -1,4 +1,4 @@
-from grid_agent.data_structs import State, Policy, Vec2D, Action, Result, ValueFunctionsContainer, GameData, TrainData, ValidStateSpace
+from grid_agent.data_structs import State, Policy, Vec2D, Action, Result, ValueFunctionsContainer, GameData, TrainData, ValidStateSpace, c_floats
 from grid_agent.functors import PolicyFun, MarkovTransitionDensity, RewardFunction
 from grid_agent.parallel_train import ProcessSharedData
 import grid_agent.parallel_train as parallel_train
@@ -11,7 +11,6 @@ from multiprocessing.sharedctypes import RawArray
 from multiprocessing import Process
 import multiprocessing as mp
 
-from ctypes import c_float, c_double
 from copy import copy, deepcopy
 from typing import Callable
 import random as rnd
@@ -123,7 +122,7 @@ class TrainManager:
 
     def __init_parallel(self, train_configuration: TrainConfigs) -> None:
         context: DefaultContext = mp.get_context()
-        value_type: type[c_float | c_double] = train_configuration.value_functions_container.get_type()
+        value_type: type[c_floats] = train_configuration.value_functions_container.get_type()
         self.__valid_state_space_size: int = train_configuration.valid_state_space.space_size
         self.__shared_data: ProcessSharedData = ProcessSharedData(
             valid_state_space= train_configuration.valid_state_space,

@@ -1,9 +1,9 @@
-from grid_agent.data_structs import State, Action, ValidStateSpace, ValueFunctionsContainer, Policy
+from grid_agent.data_structs import State, Action, ValidStateSpace, ValueFunctionsContainer, Policy, c_uints, c_floats
 from grid_agent.functors import RewardFunction, MarkovTransitionDensity
 
-from ctypes import c_ubyte, c_ushort, c_ulong, c_ulonglong, c_float, c_double, Array
 from multiprocessing.synchronize import Event, Semaphore
 from dataclasses import dataclass
+from ctypes import Array
 import math
 
 @dataclass
@@ -18,9 +18,9 @@ class ProcessSharedData:
     valid_state_space: ValidStateSpace
     value_functions_container: ValueFunctionsContainer
     policy: Policy
-    max_differences: Array[c_float | c_double]
-    partial_values_sums: Array[c_float | c_double]
-    partial_changed_actions: Array[c_ubyte | c_ushort | c_ulong | c_ulonglong]
+    max_differences: Array[c_floats]
+    partial_values_sums: Array[c_floats]
+    partial_changed_actions: Array[c_uints]
     value_event: Event
     policy_event: Event
     semaphore: Semaphore

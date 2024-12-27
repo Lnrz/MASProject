@@ -10,6 +10,11 @@ from itertools import repeat
 from enum import IntEnum
 from array import array
 
+type c_uints = c_ubyte | c_ushort | c_ulong | c_ulonglong
+type c_uint_types = type[c_uints]
+type c_floats = c_float | c_double
+type c_float_types = type[c_floats]
+
 class Result(IntEnum):
     FAIL = 0,
     SUCCESS = 1,
@@ -217,12 +222,12 @@ class ValidStateSpace(ABC):
             if self.__is_state_valid(state, obstacles):
                 index_list.append(state_index)
                 self.space_size += 1
-        types: tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]] = self.__select_type(self.space_size)
-        self.type: type[c_ubyte | c_ushort | c_ulong | c_ulonglong] = types[1]
+        types: tuple[str, c_uint_types] = self.__select_type(self.space_size)
+        self.type: c_uint_types = types[1]
         self.__array: ValidStateSpaceArray = self._get_collection(index_list, types)
 
     @abstractmethod
-    def _get_collection(self, indices: list[int], types: tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]]) -> ValidStateSpaceArray:
+    def _get_collection(self, indices: list[int], types: tuple[str, c_uint_types]) -> ValidStateSpaceArray:
         ...
 
     def get_valid_index(self, state: State) -> int:
@@ -301,7 +306,7 @@ class ValidStateSpace(ABC):
     def copy_valid_state_to(self, state: State, index: int) -> None:
         state.from_index(self.__array[index], self.map_size)
 
-    def __select_type(self, number_of_states: int) -> tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]]:
+    def __select_type(self, number_of_states: int) -> tuple[str, c_uint_types]:
         match number_of_states:
             case n if n <= 2 ** 8:
                 return ("B",  c_ubyte)
@@ -374,12 +379,12 @@ class ValidStateSpace(ABC):
 
 class ValidStateSpaceSequential(ValidStateSpace):
 
-    def _get_collection(self, indices: list[int], types: tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]]) -> ValidStateSpaceArray:
+    def _get_collection(self, indices: list[int], types: tuple[str, c_uint_types]) -> ValidStateSpaceArray:
         return array(types[0], indices)
 
 class ValidStateSpaceParallel(ValidStateSpace):
 
-    def _get_collection(self, indices: list[int], types: tuple[str, type[c_ubyte | c_ushort | c_ulong | c_ulonglong]]) -> ValidStateSpaceArray:
+    def _get_collection(self, indices: list[int], types: tuple[str, c_uint_types]) -> ValidStateSpaceArray:
         return mp.RawArray(types[1], indices)
 
 class Policy(ABC):
@@ -444,12 +449,12 @@ class ValueFunctionsContainer(ABC):
 class ValueFunctionsContainerSequential(ValueFunctionsContainer):
 
     def __init__(self, size: int, start_value: float = 0.0, use_double: bool = True) -> None:
-        self.__type: type[c_float | c_double] = c_double if use_double else c_float
+        self.__type: c_float_types = c_double if use_double else c_float
         type_char: str = "d" if use_double else "f"
         self.__old_values: array[float] = array(type_char, repeat(start_value, size))
         self.__new_values: array[float] = array(type_char, repeat(start_value, size))
 
-    def get_type(self) -> type[c_float | c_double]:
+    def get_type(self) -> c_float_types:
         return self.__type
 
     def get_current_value(self, index: int) -> float:
@@ -464,13 +469,13 @@ class ValueFunctionsContainerSequential(ValueFunctionsContainer):
 class ValueFunctionsContainerParallel(ValueFunctionsContainer):
 
     def __init__(self, size: int, start_value: float = 0.0, use_double: bool = True) -> None:
-        self.__type: type[c_float | c_double] = c_double if use_double else c_float
+        self.__type: c_float_types = c_double if use_double else c_float
         values: list[float] = [value for value in repeat(start_value, size)]
-        self.__array_a: Array[c_float | c_double] = mp.RawArray(self.__type, values)
-        self.__array_b: Array[c_float | c_double] = mp.RawArray(self.__type, values)
+        self.__array_a: Array[c_floats] = mp.RawArray(self.__type, values)
+        self.__array_b: Array[c_floats] = mp.RawArray(self.__type, values)
         self.__swapped: c_bool = mp.RawValue(c_bool, False)
 
-    def get_type(self) -> type[c_float | c_double]:
+    def get_type(self) -> c_float_types:
         return self.__type
 
     def get_current_value(self, index: int) -> float:
