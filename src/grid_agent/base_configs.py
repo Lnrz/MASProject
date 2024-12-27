@@ -127,8 +127,7 @@ class BaseConfigs(ABC):
 
     def __check_obstacles(self) -> None:
         for obstacle in self.obstacles:
-            if (obstacle.origin.x < 0 or obstacle.origin.x + obstacle.extent.x - 1 >= self.map_size.x or
-                obstacle.origin.y >= self.map_size.y or obstacle.origin.y - obstacle.extent.y + 1 < 0):
+            if not obstacle.is_inside_bounds(self.map_size):
                 raise ValueError(f"An obstacle was out of bounds\n" +
                                  f"Obstacle was [origin: ({obstacle.origin.x},{obstacle.origin.y}), extent: ({obstacle.extent.x},{obstacle.extent.y})]\n" +
                                  f"Map was {self.map_size.x}x{self.map_size.y}")

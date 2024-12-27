@@ -71,6 +71,10 @@ class Obstacle:
         return [Vec2D(x, y)
                 for x in range(self.origin.x, self.origin.x + self.extent.x)
                 for y in range(self.origin.y - self.extent.y + 1, self.origin.y + 1)]
+    
+    def is_inside_bounds(self, map_size: Vec2D) -> bool:
+        return (self.origin.x > -1 and self.origin.x + self.extent.x - 1  < map_size.x and
+                self.origin.y < map_size.y and self.origin.y - self.extent.y + 1 > -1)
 
 @dataclass
 class MapSize:
