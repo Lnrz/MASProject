@@ -200,9 +200,7 @@ class ValidStateSpace(ABC):
         self.map_size: MapSize = MapSize(map_size.x, map_size.y)
         self.space_size: int = 0
         self.__valid_cache: OrderedDict[int, int] = OrderedDict()
-        self.__valid_cache_length: int = 0
         self.__not_valid_cache: OrderedDict[int, None] = OrderedDict()
-        self.__not_valid_cache_length: int = 0
         self.__max_cache_length: int = 2 * map_size.x + 3
         index_list: list[int] = []
         state: State = State()
@@ -248,17 +246,13 @@ class ValidStateSpace(ABC):
 
     def __add_to_valid_cache(self, state_index: int, valid_state_index: int) -> None:
         self.__valid_cache[state_index] = valid_state_index
-        if self.__valid_cache_length == self.__max_cache_length:
+        if len(self.__valid_cache) == self.__max_cache_length:
             self.__valid_cache.popitem(last=False)
-        else:
-            self.__valid_cache_length += 1
 
     def __add_to_not_valid_cache(self, state_index: int) -> None:
         self.__not_valid_cache[state_index] = None
-        if self.__not_valid_cache_length == self.__max_cache_length:
+        if len(self.__not_valid_cache) == self.__max_cache_length:
             self.__not_valid_cache.popitem(last=False)
-        else:
-            self.__not_valid_cache_length += 1
 
     def copy_valid_state_to(self, state: State, index: int) -> None:
         state.from_index(self.__sequence[index], self.map_size)
