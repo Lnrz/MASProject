@@ -11,8 +11,8 @@ from multiprocessing.sharedctypes import RawArray
 from multiprocessing import Process
 import multiprocessing as mp
 
+from collections.abc import Callable
 from copy import copy, deepcopy
-from typing import Callable
 import random as rnd
 import math
 

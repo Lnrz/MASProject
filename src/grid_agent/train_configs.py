@@ -2,7 +2,7 @@ from grid_agent.data_structs import ValidStateSpace, Policy, ValueFunctionsConta
 from grid_agent.functors import RewardFunction, SimpleRewardFunction
 from grid_agent.base_configs import BaseConfigs, ConfigArgument
 
-from typing import Callable
+from collections.abc import Callable
 
 class TrainConfigs(BaseConfigs):
 

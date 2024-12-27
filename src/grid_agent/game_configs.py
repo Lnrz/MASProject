@@ -2,7 +2,7 @@ from grid_agent.functors import PolicyFun, AgentPolicy, UniformPolicy, MarkovTra
 from grid_agent.data_structs import  Vec2D, PolicySequential, ValidStateSpace, ValidStateSpaceSequential
 from grid_agent.base_configs import BaseConfigs, ConfigArgument
 
-from typing import Callable
+from collections.abc import Callable
 
 class GameConfigs(BaseConfigs):
 

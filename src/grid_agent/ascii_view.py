@@ -1,5 +1,6 @@
 from grid_agent.data_structs import GameData, Obstacle, Vec2D, Action
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any
 from time import sleep
 
 class ASCIIView:

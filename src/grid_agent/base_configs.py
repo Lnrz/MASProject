@@ -1,8 +1,8 @@
 from grid_agent.functors import MarkovTransitionDensity, SimpleMarkovTransitionDensity
 from grid_agent.data_structs import Vec2D, Obstacle
 
+from collections.abc import Callable
 from abc import ABC, abstractmethod
-from typing import Callable
 
 class  ConfigArgument[T]:
 
