@@ -200,8 +200,8 @@ class ValidStateSpace(ABC):
         self.map_size: MapSize = MapSize(map_size.x, map_size.y)
         self.space_size: int = 0
         self.__valid_cache: OrderedDict[int, int] = OrderedDict()
-        self.__not_valid_cache: OrderedDict[int, None] = OrderedDict()
-        self.__max_cache_length: int = 2 * map_size.x + 3
+        self.__not_valid_cache: OrderedDict[int, int] = OrderedDict()
+        self.__max_cache_length: int = 3 * map_size.x
         index_list: list[int] = []
         state: State = State()
         state_index: int = 0
@@ -223,8 +223,9 @@ class ValidStateSpace(ABC):
         valid_index: int | None = self.__valid_cache.get(state_index)
         if valid_index is not None:
             return valid_index
-        valid_index = self.__binary_search(state_index)
-        if valid_index == -1:
+        is_valid: bool
+        is_valid, valid_index = self.__binary_search(state_index)
+        if not is_valid:
             raise ValueError("Should not happen")
         self.__add_to_valid_cache(state_index, valid_index)
         return valid_index
@@ -236,22 +237,58 @@ class ValidStateSpace(ABC):
             return True
         if state_index in self.__not_valid_cache:
             return False
-        valid_index: int = self.__binary_search(state_index)
-        is_valid: bool = valid_index != -1
+        is_valid: bool
+        valid_index: int
+        is_valid, valid_index = self.__binary_search(state_index)
         if is_valid:
             self.__add_to_valid_cache(state_index, valid_index)
         else:
-            self.__add_to_not_valid_cache(state_index)
+            self.__add_to_not_valid_cache(state_index, valid_index)
         return is_valid
 
     def __add_to_valid_cache(self, state_index: int, valid_state_index: int) -> None:
         self.__valid_cache[state_index] = valid_state_index
+        self.__load_near_states_to_cache(state_index, valid_state_index, False)
         if len(self.__valid_cache) == self.__max_cache_length:
             self.__valid_cache.popitem(last=False)
 
-    def __add_to_not_valid_cache(self, state_index: int) -> None:
-        self.__not_valid_cache[state_index] = None
+    def __add_to_not_valid_cache(self, state_index: int, last_smaller_valid_index: int) -> None:
+        self.__not_valid_cache[state_index] = last_smaller_valid_index
+        self.__load_near_states_to_cache(state_index, last_smaller_valid_index, True)
         if len(self.__not_valid_cache) == self.__max_cache_length:
+            self.__not_valid_cache.popitem(last=False)
+
+    def __load_near_states_to_cache(self, state_index: int, valid_state_index: int, index_not_valid: bool) -> None:
+        prev_valid_state_index: int = valid_state_index - 1 if not index_not_valid else valid_state_index
+        prev_state_index: int = state_index - 1
+        next_valid_state_index: int = valid_state_index + 1
+        next_state_index: int = state_index + 1
+        
+        if prev_valid_state_index > -1:
+            prev_state_index_found: int = self.__sequence[prev_valid_state_index]
+            if prev_state_index_found == prev_state_index:
+                self.__valid_cache[prev_state_index] = prev_valid_state_index
+            else:
+                self.__valid_cache[prev_state_index_found] = prev_valid_state_index
+                self.__not_valid_cache[prev_state_index_found + 1] = prev_valid_state_index
+                self.__not_valid_cache[prev_state_index] = prev_valid_state_index
+        else:
+            self.__not_valid_cache[prev_state_index] = prev_valid_state_index
+        
+        if next_valid_state_index < self.space_size:
+            next_state_index_found: int = self.__sequence[next_valid_state_index]
+            if next_state_index_found == next_state_index:
+                self.__valid_cache[next_state_index] = next_valid_state_index
+            else:
+                self.__valid_cache[next_state_index_found] = next_valid_state_index
+                self.__not_valid_cache[next_state_index_found - 1] = valid_state_index
+                self.__not_valid_cache[next_state_index] = valid_state_index
+        else:
+            self.__not_valid_cache[next_state_index] = valid_state_index
+        
+        while len(self.__valid_cache) > self.__max_cache_length:
+            self.__valid_cache.popitem(last=False)
+        while len(self.__not_valid_cache) > self.__max_cache_length:
             self.__not_valid_cache.popitem(last=False)
 
     def copy_valid_state_to(self, state: State, index: int) -> None:
@@ -268,19 +305,19 @@ class ValidStateSpace(ABC):
             case _:
                 return ("Q", c_ulonglong)
     
-    def __binary_search(self, state_index: int) -> int:
+    def __binary_search(self, state_index: int) -> tuple[bool, int]:
         i: int = 0
         j: int = self.space_size - 1
         while i <= j:
             k: int = (i + j) // 2
             retrieved_index: int = self.__sequence[k]
             if retrieved_index == state_index:
-                return k
+                return (True, k)
             elif retrieved_index < state_index:
                 i = k + 1
             else:
                 j = k - 1
-        return -1
+        return (False, j)
 
     def __is_state_valid(self, state: State, obstacles: Iterable[Obstacle]) -> bool:
         if state.target_pos == state.opponent_pos:
@@ -323,7 +360,7 @@ class ValidStateSpace(ABC):
 
     def __contains__(self, obj: int | State) -> bool:
         if isinstance(obj, int):
-            return self.__binary_search(obj) != -1
+            return self.__binary_search(obj)[0]
         if isinstance(obj, State):
             return self.is_state_outside_obstacles(obj)
         return False
