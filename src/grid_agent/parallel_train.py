@@ -59,7 +59,7 @@ def improve_policy(shared_data: ProcessSharedData, process_index: int, start_ind
     changed_actions: int = 0
     for index in range(end_index - 1, start_index - 1, -1):
         shared_data.valid_state_space.copy_valid_state_to(state, index)
-        new_action: Action = calculate_new_policy_action(state, index, shared_data)
+        new_action: Action = max(shared_data.actions, key=lambda action: mask_actions(state, index, action, shared_data))
         old_action: Action = shared_data.policy.get_action(index)
         if new_action != old_action:
             changed_actions += 1
@@ -79,9 +79,6 @@ def calculate_new_value_function_value(state: State, state_index: int, chosen_ac
             shared_data.next_states_values[action] = shared_data.value_functions_container.get_current_value(state_index)
     return (shared_data.reward(state, shared_data.next_states[chosen_action]) + 
             shared_data.discount_rate * sum([next_state_value * probability for next_state_value, probability in zip(shared_data.next_states_values, shared_data.probabilities)]))
-
-def calculate_new_policy_action(state: State, state_index: int, shared_data: ProcessSharedData) -> Action:
-    return max(shared_data.actions, key=lambda action: mask_actions(state, state_index, action, shared_data))
 
 def mask_actions(state: State, state_index: int, action: Action, shared_data: ProcessSharedData) -> float:
     is_valid: bool = state.move_checking_bounds(state.agent_pos, action, shared_data.valid_state_space.map_size)

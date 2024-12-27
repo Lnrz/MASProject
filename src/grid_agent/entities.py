@@ -219,7 +219,7 @@ class TrainManager:
     
     def __update_policy(self) -> None:
         for index, state in zip(range(self.__valid_states_space.space_size -1, -1, -1), reversed(self.__valid_states_space)):
-            new_action: Action = self.__calculate_new_policy_action(state, index)
+            new_action: Action = max(self.__actions, key=lambda action: self.__mask_actions(state, index, action))
             old_action: Action = self.__policy.get_action(index)
             if new_action != old_action:
                 self.__traindata.changed_actions_number += 1
@@ -240,9 +240,6 @@ class TrainManager:
         return (self.__reward(state, self.__next_states[chosen_action]) +
                 self.__discount_factor * sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
 
-    def __calculate_new_policy_action(self, state: State, state_index: int) -> Action:
-        return max(self.__actions, key=lambda action: self.__mask_actions(state, state_index, action))
-    
     def __mask_actions(self, state: State, state_index: int, action: Action) -> float:
         is_valid: bool = state.move_checking_bounds(state.agent_pos, action, self.__valid_states_space.map_size)
         if not is_valid:
