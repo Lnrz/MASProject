@@ -171,7 +171,7 @@ class ValidStateSpaceIterator:
 
     def __init__(self, states: Sequence[int], space_size: int, map_size: MapSize, reversed: bool) -> None:
         self.__collection: Sequence[int] = states
-        self.__space_size: int = space_size;
+        self.__space_size: int = space_size
         self.__map_size: MapSize = map_size
         self.__reversed: bool = reversed
         if not reversed:
