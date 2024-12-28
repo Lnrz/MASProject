@@ -1,0 +1,72 @@
+---------------------------------
+----------   GENERAL   ----------
+---------------------------------
+
+MAPSIZE n m:
+    the size of the map.
+    "n" is the lenght, "m" the height.
+    The map has its origin (0,0) in its leftmost-downmost point.
+    The x grows going right.
+    The y grows going up.
+OBSTACLE origin_x origin_y extent_x extent_y:
+    an obstacle of the map.
+    (origin_x, origin_y) is the leftmost-uppermost point occupied by the obstacle.
+    "size_x" specifies the lenght towards the positive x axis.
+    "size_y" specifies the height towards the negative y axis.
+DDMTD AGENT chosen_action_probability right_action_probability opposite_action_probability left_action_probability:
+    specifies the markov transition density of the agent.
+    "chosen_action_probability" is the probability that the agent will do the chosen action.   (ex. RIGHT)
+    "right_action_probability" is the probability that the agent wil do the action on the right relative to the chosen action. (ex. DOWN)
+    "opposite_action_probability" is the probability that the agent will do the opposite action. (ex. LEFT)
+    "left_action_probability" is the probability that the agent wil do the action on the left relative to the chosen action. (ex. UP)
+    Default to 0.9 0.05 0.0 0.5.
+POLICY policy_file_path:
+    specifies the path to the policy file.
+    In train mode is used to save the policiy file.
+    In play mode is used to load the policy file.
+
+
+------------------------------
+----------   GAME   ----------
+------------------------------
+
+AGENT start_x start_y
+    specifies the starting poisition of the agent.
+TARGET start_x start_y
+    specifies the starting poisition of the target.
+OPPONENT start_x start_y
+    specifies the starting poisition of the opponent.
+DDMTD TARGET chosen_action_probability right_action_probability opposite_action_probability left_action_probability
+    specifies the markov transition density of the target.
+DDMTD OPPONENT chosen_action_probability right_action_probability opposite_action_probability left_action_probability
+    specifies the markov transition density of the opponent.
+
+
+-------------------------------
+----------   TRAIN   ----------
+-------------------------------
+
+PROCESSES processes_number:
+    the number of processes to use for learning.
+    Default to 1.
+DISCOUNT discount_factor:
+    the discount factor to use in the policy iteration algorithm.
+    Default to 0.5.
+USEDOUBLE or USEFLOAT:
+    whether to use float or double to store the value function's values in memory.
+    Default to double.
+DENSERREWARD or SPARSEREWARD:
+    whether to use a dense or sparse reward for learning.
+    Default to dense reward.
+MAXITER max_iter:
+    the maximum number of iterations before the learning is stopped.
+    Default to 100.
+VALUETOLERANCE value_tolerance:
+    if the maximum difference between the previous and the new value function's values is less than or equal to this value the learning is stopped.
+    Default to 0.
+ACTIONTOLERANCE action_tolerance:
+    if the number of changed actions is less than or equal to this value the learning is stopped.
+    Default to 0.
+ACTIONPERCTOLERANCE action_perc_tolerance:
+    if the percentage of changed actions is less than or equal to this value the learning is stopped.
+    Default to 0.

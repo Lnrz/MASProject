@@ -1,4 +1,4 @@
-from grid_agent.functors import PolicyFun, AgentPolicy, UniformPolicy, MarkovTransitionDensity, SimpleMarkovTransitionDensity
+from grid_agent.functors import PolicyFun, AgentPolicy, UniformPolicy, MarkovTransitionDensity, DiscreteDistributionMarkovTransitionDensity
 from grid_agent.data_structs import  Vec2D, PolicySequential, ValidStateSpace, ValidStateSpaceSequential
 from grid_agent.base_configs import BaseConfigs, ConfigArgument
 
@@ -15,8 +15,8 @@ class GameConfigs(BaseConfigs):
         self.__agent_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: AgentPolicy(PolicySequential.from_file(c.policy_file_path), c.valid_state_space))
         self.__target_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: UniformPolicy())
         self.__opponent_policy_factory: ConfigArgument[Callable[[GameConfigs], PolicyFun]] = ConfigArgument(lambda c: UniformPolicy())
-        self.__target_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
-        self.__opponent_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
+        self.__target_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: DiscreteDistributionMarkovTransitionDensity())
+        self.__opponent_markov_transition_density_factory: ConfigArgument[Callable[[GameConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: DiscreteDistributionMarkovTransitionDensity())
     
     @property
     def agent_start(self) -> Vec2D:
@@ -91,6 +91,28 @@ class GameConfigs(BaseConfigs):
                 self.__target_start.set_if_not_frozen(Vec2D(int(start_x), int(start_y)))
             case ["opponent", start_x, start_y]:
                 self.__opponent_start.set_if_not_frozen(Vec2D(int(start_x), int(start_y)))
+            case ["ddmtd", entity, chosen_action_probability, right_action_probability, opposite_action_probability, left_action_probabilty]:
+                match entity:
+                    case "target":
+                        self.__target_markov_transition_density_factory.set_if_not_frozen(
+                            lambda c: DiscreteDistributionMarkovTransitionDensity(
+                                float(chosen_action_probability),
+                                float(right_action_probability),
+                                float(opposite_action_probability),
+                                float(left_action_probabilty)
+                            )
+                        )
+                    case "opponent":
+                        self.__opponent_markov_transition_density_factory.set_if_not_frozen(
+                            lambda c: DiscreteDistributionMarkovTransitionDensity(
+                                float(chosen_action_probability),
+                                float(right_action_probability),
+                                float(opposite_action_probability),
+                                float(left_action_probabilty)
+                            )
+                        )
+                    case _:
+                        return False
             case _:
                 return False
         return True

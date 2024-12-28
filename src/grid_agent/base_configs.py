@@ -1,4 +1,4 @@
-from grid_agent.functors import MarkovTransitionDensity, SimpleMarkovTransitionDensity
+from grid_agent.functors import MarkovTransitionDensity, DiscreteDistributionMarkovTransitionDensity
 from grid_agent.data_structs import Vec2D, Obstacle
 
 from collections.abc import Callable
@@ -29,7 +29,7 @@ class BaseConfigs(ABC):
         self.__policy_file_path: ConfigArgument[str] = ConfigArgument("")
         self.__map_size: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
         self.__obstacles: ConfigArgument[list[Obstacle]]  = ConfigArgument([])
-        self.__agent_markov_transition_density_factory: ConfigArgument[Callable[[BaseConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: SimpleMarkovTransitionDensity())
+        self.__agent_markov_transition_density_factory: ConfigArgument[Callable[[BaseConfigs], MarkovTransitionDensity]] = ConfigArgument(lambda c: DiscreteDistributionMarkovTransitionDensity())
         self.line_processing_extension: Callable[[BaseConfigs, list[str]], None] = lambda c, l: None
 
     @property
@@ -84,13 +84,13 @@ class BaseConfigs(ABC):
             for line in f.readlines():
                 if line.isspace():
                     continue
+                line = line.casefold()
                 self.__process_line(line)
 
     def __process_line(self, line: str) -> None:
         if line.startswith("#"):
             return
         splitted_line: list[str] = line.split()
-        splitted_line[0] = splitted_line[0].casefold()
         has_match: bool = True
         match splitted_line:
             case ["mapsize", map_x_length, map_y_length]:
@@ -100,6 +100,15 @@ class BaseConfigs(ABC):
                     self.__obstacles.value.append(Obstacle(Vec2D(int(origin_x), int(origin_y)), Vec2D(int(extent_x), int(extent_y))))
             case ["policy", policy_path]:
                 self.__policy_file_path.set_if_not_frozen(policy_path)
+            case ["ddmtd", "agent", chosen_action_probability, right_action_probability, opposite_action_probability, left_action_probabilty]:
+                self.__agent_markov_transition_density_factory.set_if_not_frozen(
+                    lambda c: DiscreteDistributionMarkovTransitionDensity(
+                        float(chosen_action_probability),
+                        float(right_action_probability),
+                        float(opposite_action_probability),
+                        float(left_action_probabilty)
+                    )
+                )
             case _:
                 has_match = False
         if not has_match:

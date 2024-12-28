@@ -1,5 +1,5 @@
 from grid_agent.data_structs import ValidStateSpace, Policy, ValueFunctionsContainer, ValidStateSpaceSequential, PolicySequential, ValueFunctionsContainerSequential, ValidStateSpaceParallel, PolicyParallel, ValueFunctionsContainerParallel 
-from grid_agent.functors import RewardFunction, SimpleRewardFunction
+from grid_agent.functors import RewardFunction, DenseRewardFunction, SparseRewardFunction
 from grid_agent.base_configs import BaseConfigs, ConfigArgument
 
 from collections.abc import Callable
@@ -9,7 +9,7 @@ class TrainConfigs(BaseConfigs):
 
     def __init__(self) -> None:
         super().__init__()
-        self.__reward_factory: ConfigArgument[Callable[[TrainConfigs], RewardFunction]] = ConfigArgument(lambda c: SimpleRewardFunction())
+        self.__reward_factory: ConfigArgument[Callable[[TrainConfigs], RewardFunction]] = ConfigArgument(lambda c: DenseRewardFunction())
         self.__processes_number: ConfigArgument[int] = ConfigArgument(1)
         self.__discount_factor: ConfigArgument[float] = ConfigArgument(0.5)
         self.__use_float: ConfigArgument[bool] = ConfigArgument(False)
@@ -106,8 +106,14 @@ class TrainConfigs(BaseConfigs):
                 self.__discount_factor.set_if_not_frozen(float(discount_factor))
             case ["processes", processes_number]:
                 self.__processes_number.set_if_not_frozen(int(processes_number))
-            case ["usefloat", use_float]:
-                self.__use_float.set_if_not_frozen(bool(use_float))
+            case ["usefloat"]:
+                self.__use_float.set_if_not_frozen(True)
+            case ["usedouble"]:
+                self.__use_float.set_if_not_frozen(False)
+            case ["densereward"]:
+                self.__reward_factory.set_if_not_frozen(lambda c: DenseRewardFunction())
+            case ["sparsereward"]:
+                self.__reward_factory.set_if_not_frozen(lambda c: SparseRewardFunction())
             case _:
                 return False
         return True
