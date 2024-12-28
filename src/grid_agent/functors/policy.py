@@ -1,6 +1,7 @@
 from grid_agent.data_structs.valid_state_space import ValidStateSpace
-from grid_agent.data_structs.state import State, Action
+from grid_agent.data_structs.simple_data import Action
 from grid_agent.data_structs.policy import Policy
+from grid_agent.data_structs.state import State
 from abc import ABC, abstractmethod
 from typing import override
 import random as rnd

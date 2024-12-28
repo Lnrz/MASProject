@@ -1,6 +1,7 @@
 from grid_agent.data_structs.valid_state_space import ValidStateSpace
 from grid_agent.entities.moving_entity import MovingEntity
-from grid_agent.data_structs.state import State, Action
+from grid_agent.data_structs.simple_data import Action
+from grid_agent.data_structs.state import State
 from grid_agent.configs.game_configs import GameConfigs
 
 from dataclasses import dataclass, field
