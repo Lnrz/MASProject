@@ -1,4 +1,4 @@
-from grid_agent.train_view import TrainDataView
+from grid_agent.views.train_view import TrainDataView
 from argparse import ArgumentParser, Namespace
 
 def main() -> None:

@@ -1,6 +1,9 @@
-from grid_agent.functors import PolicyFun, AgentPolicy, UniformPolicy, MarkovTransitionDensity, DiscreteDistributionMarkovTransitionDensity
-from grid_agent.data_structs import  Vec2D, PolicySequential, ValidStateSpace, ValidStateSpaceSequential
-from grid_agent.base_configs import BaseConfigs, ConfigArgument
+from grid_agent.functors.markov_transition_density import MarkovTransitionDensity, DiscreteDistributionMarkovTransitionDensity
+from grid_agent.data_structs.valid_state_space import ValidStateSpace, ValidStateSpaceSequential
+from grid_agent.functors.policy import PolicyFun, AgentPolicy, UniformPolicy
+from grid_agent.configs.base_configs import BaseConfigs, ConfigArgument
+from grid_agent.data_structs.policy import PolicySequential
+from grid_agent.data_structs.simple_data import  Vec2D
 
 from collections.abc import Callable
 from typing import override

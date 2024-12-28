@@ -1,9 +1,13 @@
-from grid_agent.data_structs import State, Policy, Vec2D, Action, Result, ValueFunctionsContainer, GameData, TrainData, ValidStateSpace, c_floats
-from grid_agent.functors import PolicyFun, MarkovTransitionDensity, RewardFunction
-from grid_agent.parallel_train import ProcessSharedData
-import grid_agent.parallel_train as parallel_train
-from grid_agent.train_configs import TrainConfigs
-from grid_agent.game_configs import GameConfigs
+from grid_agent.data_structs.value_functions_container import ValueFunctionsContainer
+from grid_agent.functors.markov_transition_density import MarkovTransitionDensity
+from grid_agent.data_structs.valid_state_space import ValidStateSpace
+from grid_agent.data_structs.simple_data import Action, c_floats
+from grid_agent.entities.parallel_train import ProcessSharedData
+import grid_agent.entities.parallel_train as parallel_train
+from grid_agent.configs.train_configs import TrainConfigs
+from grid_agent.functors.reward import RewardFunction
+from grid_agent.data_structs.policy import Policy
+from grid_agent.data_structs.state import State
 
 from multiprocessing.synchronize import Event, Semaphore
 from multiprocessing.context import DefaultContext
@@ -12,78 +16,17 @@ from multiprocessing import Process
 import multiprocessing as mp
 
 from collections.abc import Callable
-from copy import copy, deepcopy
-import random as rnd
+from dataclasses import dataclass
+from copy import copy
 import math
 
-class MovingEntity:
-    
-    def __init__(self, start_pos: Vec2D, policy: PolicyFun, markov_transition_density: MarkovTransitionDensity) -> None:
-        self.__pos: Vec2D = start_pos
-        self.__policy: PolicyFun = policy
-        self.__markov_transition_density: MarkovTransitionDensity = markov_transition_density
-
-    def move(self, state: State, valid_state_space: ValidStateSpace) -> Action:
-        chosen_action: Action = self.__policy(state)
-        actual_action: Action = self.__get_next_action(chosen_action)
-        self.__pos.move(actual_action)
-        if not valid_state_space.is_state_within_bounds(state) or not valid_state_space.is_state_outside_obstacles(state):
-            self.__pos.undo(actual_action)
-        return chosen_action
-    
-    def __get_next_action(self, chosen_action: Action) -> Action:
-        actions: list[Action] = [Action(i) for i in range(Action.MAX_EXCLUSIVE.value)]
-        probabilities: list[float] = [self.__markov_transition_density(chosen_action, action) for action in actions]
-        return rnd.choices(actions, probabilities)[0]
-
-
-
-class GameManager:
-    
-    def __init__(self, game_configuration: GameConfigs) -> None:
-        game_configuration.validate()
-        self.__valid_state_space: ValidStateSpace = game_configuration.valid_state_space
-        self.__state: State = State(copy(game_configuration.agent_start), copy(game_configuration.opponent_start), copy(game_configuration.target_start))
-        self.__agent: MovingEntity = MovingEntity(self.__state.agent_pos, game_configuration.agent_policy, game_configuration.agent_markov_transition_density)
-        self.__target: MovingEntity = MovingEntity(self.__state.target_pos, game_configuration.target_policy, game_configuration.target_markov_transition_density)
-        self.__opponent: MovingEntity = MovingEntity(self.__state.opponent_pos, game_configuration.opponent_policy, game_configuration.opponent_markov_transition_density)
-        self.__res: Result = Result.WAITING_FOR_RESULT
-        self.__gamedata: GameData = GameData()
-        self.__callback: Callable[[GameData], None] = lambda g: None
-
-    def register_callback(self, callback: Callable[[GameData], None]) -> None:
-        self.__callback = callback
-
-    def start(self) -> Result:
-        while self.__res == Result.WAITING_FOR_RESULT:
-            self.__gamedata.state = deepcopy(self.__state)
-            self.__next_iteration()
-            self.__callback(copy(self.__gamedata))
-        self.__gamedata = GameData()
-        self.__gamedata.state = deepcopy(self.__state)
-        self.__callback(copy(self.__gamedata))
-        return self.__res
-
-    def __next_iteration(self) -> None:
-        self.__gamedata.agent_action = self.__agent.move(self.__state, self.__valid_state_space)
-        if self.__check_for_result():
-            return
-        self.__gamedata.target_action = self.__target.move(self.__state, self.__valid_state_space)
-        self.__gamedata.opponent_action = self.__opponent.move(self.__state, self.__valid_state_space)
-        self.__check_for_result()
-
-    def __check_for_result(self) -> bool:
-        match self.__state.agent_pos:
-            case self.__state.target_pos:
-                self.__res = Result.SUCCESS
-                return True
-            case self.__state.opponent_pos:
-                self.__res = Result.FAIL
-                return True
-            case _:
-                return False
-
-
+@dataclass
+class TrainData:
+    iteration_number: int = 0
+    mean_value: float = 0.0
+    max_value_diff: float = 0.0
+    changed_actions_number: int = 0
+    changed_actions_percentage: float = 0.0
 
 class TrainManager:
     

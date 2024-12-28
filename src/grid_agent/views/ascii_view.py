@@ -1,4 +1,5 @@
-from grid_agent.data_structs import GameData, Obstacle, Vec2D, Action
+from grid_agent.data_structs.simple_data import Obstacle, Vec2D, Action
+from grid_agent.entities.game_manager import GameData
 from collections.abc import Callable
 from typing import Any
 from time import sleep

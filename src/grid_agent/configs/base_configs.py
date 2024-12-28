@@ -1,5 +1,5 @@
-from grid_agent.functors import MarkovTransitionDensity, DiscreteDistributionMarkovTransitionDensity
-from grid_agent.data_structs import Vec2D, Obstacle
+from grid_agent.functors.markov_transition_density import MarkovTransitionDensity, DiscreteDistributionMarkovTransitionDensity
+from grid_agent.data_structs.simple_data import Vec2D, Obstacle
 
 from collections.abc import Callable
 from abc import ABC, abstractmethod

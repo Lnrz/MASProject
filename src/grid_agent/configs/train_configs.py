@@ -1,6 +1,8 @@
-from grid_agent.data_structs import ValidStateSpace, Policy, ValueFunctionsContainer, ValidStateSpaceSequential, PolicySequential, ValueFunctionsContainerSequential, ValidStateSpaceParallel, PolicyParallel, ValueFunctionsContainerParallel 
-from grid_agent.functors import RewardFunction, DenseRewardFunction, SparseRewardFunction
-from grid_agent.base_configs import BaseConfigs, ConfigArgument
+from grid_agent.data_structs.value_functions_container import  ValueFunctionsContainer, ValueFunctionsContainerSequential, ValueFunctionsContainerParallel
+from grid_agent.data_structs.valid_state_space import ValidStateSpace, ValidStateSpaceSequential, ValidStateSpaceParallel 
+from grid_agent.functors.reward import RewardFunction, DenseRewardFunction, SparseRewardFunction
+from grid_agent.data_structs.policy import Policy, PolicySequential, PolicyParallel
+from grid_agent.configs.base_configs import BaseConfigs, ConfigArgument
 
 from collections.abc import Callable
 from typing import override

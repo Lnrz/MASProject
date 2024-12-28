@@ -1,5 +1,5 @@
-from grid_agent.train_configs import TrainConfigs
-from grid_agent.entities import TrainManager
+from grid_agent.entities.train_manager import TrainManager
+from grid_agent.configs.train_configs import TrainConfigs
 
 from argparse import ArgumentParser, Namespace
 
@@ -15,7 +15,7 @@ def get_command_line_arguments() ->  Namespace:
   
   parser.add_argument("configs", type=str, help="Path to the configuration file")
   parser.add_argument("-p", "--policy", type=str, help="Path where to save the policy file")
-  parser.add_argument("-proc", "--processes", type=int, default=1, help="The number of processes that will be executed")
+  parser.add_argument("-proc", "--processes", type=int, default=0, help="The number of processes that will be executed")
   parser.add_argument("-f", "--use_float", action="store_true", help="Use float instead of double to store value function values")
   parser.add_argument("-d", "--dry_run", action="store_true", help="Do not write policy to disk")
   parser.add_argument("-mi", "--max_iter", type=int, help="Maximum number of iterations")
@@ -40,7 +40,8 @@ def get_train_configuration(arguments: Namespace) -> TrainConfigs:
     train_configuration.changed_actions_tolerance = arguments.changed_actions_tolerance
   if arguments.changed_actions_percentage_tolerance is not None:
     train_configuration.changed_actions_percentage_tolerance = arguments.changed_actions_percentage_tolerance
-  train_configuration.processes_number = arguments.processes
+  if arguments.processes > 0:
+    train_configuration.processes_number = arguments.processes
   train_configuration.use_float = arguments.use_float
   train_configuration.is_dry_run = arguments.dry_run
   

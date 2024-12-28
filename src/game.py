@@ -1,7 +1,7 @@
-from grid_agent.data_structs import Vec2D
-from grid_agent.game_configs import GameConfigs
-from grid_agent.entities import GameManager
-from grid_agent.ascii_view import ASCIIView
+from grid_agent.entities.game_manager import GameManager
+from grid_agent.configs.game_configs import GameConfigs
+from grid_agent.data_structs.simple_data import Vec2D
+from grid_agent.views.ascii_view import ASCIIView
 
 from argparse import ArgumentParser, Namespace
 import re

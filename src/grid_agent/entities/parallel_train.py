@@ -1,5 +1,10 @@
-from grid_agent.data_structs import State, Action, ValidStateSpace, ValueFunctionsContainer, Policy, c_uints, c_floats
-from grid_agent.functors import RewardFunction, MarkovTransitionDensity
+from grid_agent.data_structs.value_functions_container import ValueFunctionsContainer
+from grid_agent.functors.markov_transition_density import MarkovTransitionDensity
+from grid_agent.data_structs.simple_data import Action, c_floats, c_uints
+from grid_agent.data_structs.valid_state_space import ValidStateSpace
+from grid_agent.functors.reward import RewardFunction
+from grid_agent.data_structs.policy import Policy
+from grid_agent.data_structs.state import State
 
 from multiprocessing.synchronize import Event, Semaphore
 from dataclasses import dataclass
