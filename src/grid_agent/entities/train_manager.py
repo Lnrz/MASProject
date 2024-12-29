@@ -123,11 +123,28 @@ class TrainManager:
         while (not self.__check_stop_conditions()):
             self.__prepare_traindata()
             print(f"{self.__traindata.iteration_number}-th iteration", end="\r")
-            self.__next_iteration()
+            self.__evaluate_policy_sequential()
+            self.__improve_policy_sequential()
             self.__callback(copy(self.__traindata))
         print()
         if not self.__is_dry_run:
             self.__policy.write_to_file(self.__policy_file_path)
+
+    def __start_parallel(self) -> None:
+        for process in self.__processes:
+            process.start()
+        while not self.__check_stop_conditions():
+            self.__prepare_traindata()
+            print(f"{self.__traindata.iteration_number}-th iteration", end="\r")
+            self.__evaluate_policy_parallel()
+            self.__improve_policy_parallel()
+            self.__callback(copy(self.__traindata))
+        print()
+        for process in self.__processes:
+            process.terminate()
+            process.join()
+        if not self.__is_dry_run:
+            self.__shared_data.policy.write_to_file(self.__policy_file_path)
 
     def __check_stop_conditions(self) -> bool:
         return (self.__traindata.iteration_number >= self.__max_iter or
@@ -142,11 +159,7 @@ class TrainManager:
         self.__traindata.mean_value = 0.0
         self.__traindata.max_value_diff = 0.0
 
-    def __next_iteration(self) -> None:
-        self.__update_value_function()
-        self.__update_policy()
-
-    def __update_value_function(self) -> None:
+    def __evaluate_policy_sequential(self) -> None:
         for index, state in enumerate(self.__valid_states_space):
             action: Action = self.__policy.get_action(index)
             new_value: float = self.__calculate_new_value_function_value(state, index, action)
@@ -159,7 +172,7 @@ class TrainManager:
         self.__value_functions_container.swap_value_functions()
         self.__traindata.mean_value /= self.__valid_states_space.space_size
     
-    def __update_policy(self) -> None:
+    def __improve_policy_sequential(self) -> None:
         for index, state in zip(range(self.__valid_states_space.space_size -1, -1, -1), reversed(self.__valid_states_space)):
             new_action: Action = max(self.__actions, key=lambda action: self.__mask_actions(state, index, action))
             old_action: Action = self.__policy.get_action(index)
@@ -191,23 +204,6 @@ class TrainManager:
         if not is_valid:
             return -math.inf
         return self.__calculate_new_value_function_value(state, state_index, action, is_valid)
-    
-
-    def __start_parallel(self) -> None:
-        for process in self.__processes:
-            process.start()
-        while not self.__check_stop_conditions():
-            self.__prepare_traindata()
-            print(f"{self.__traindata.iteration_number}-th iteration", end="\r")
-            self.__evaluate_policy_parallel()
-            self.__improve_policy_parallel()
-            self.__callback(copy(self.__traindata))
-        print()
-        for process in self.__processes:
-            process.terminate()
-            process.join()
-        if not self.__is_dry_run:
-            self.__shared_data.policy.write_to_file(self.__policy_file_path)
     
     def __evaluate_policy_parallel(self) -> None:
         self.__shared_data.value_event.set()
