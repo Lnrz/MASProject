@@ -10,9 +10,8 @@ MAPSIZE n m:
     The y grows going up.
 OBSTACLE origin_x origin_y extent_x extent_y:
     an obstacle of the map.
-    (origin_x, origin_y) is the leftmost-uppermost point occupied by the obstacle.
-    "size_x" specifies the lenght towards the positive x axis.
-    "size_y" specifies the height towards the negative y axis.
+    (origin_x, origin_y) is the leftmost-lowermost point occupied by the obstacle.
+    (extent_x, extent_y) specifies the size of the obstacle, both towards the positive of the corresponding axis
 DDMTD AGENT chosen_action_probability right_action_probability opposite_action_probability left_action_probability:
     specifies the markov transition density of the agent.
     "chosen_action_probability" is the probability that the agent will do the chosen action.   (ex. RIGHT)

@@ -22,6 +22,6 @@ class MovingEntity:
         return chosen_action
     
     def __get_next_action(self, chosen_action: Action) -> Action:
-        actions: list[Action] = [Action(i) for i in range(Action.MAX_EXCLUSIVE.value)]
+        actions: list[Action] = [Action(i) for i in range(Action.MAX_EXCLUSIVE)]
         probabilities: list[float] = [self.__markov_transition_density(chosen_action, action) for action in actions]
         return rnd.choices(actions, probabilities)[0]
