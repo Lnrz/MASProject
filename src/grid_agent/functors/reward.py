@@ -4,15 +4,28 @@ from abc import ABC, abstractmethod
 from typing import override
 
 def manhattan_distance(point_a: Vec2D, point_b: Vec2D) -> int:
+    """Calculate the manhattan distance between ``point_a`` and ``point_b``."""
     return abs(point_a.x - point_b.x) + abs(point_a.y - point_b.y)
 
 class RewardFunction(ABC):
+    """Interface for the reward functors."""
 
     @abstractmethod
     def __call__(self, state: State, next_state: State) -> float:
+        """Return the reward of being in ``state`` and doing an ``Action`` that brings to ``next_state``."""
         ...
 
 class DenseRewardFunction(RewardFunction):
+    """A dense ``RewardFunction``.
+    
+    Return
+    - 1, if the agent overlaps with the target,
+    - -1, if the agent overlaps with the opponent,
+    - 0.25, if the agent does an ``Action`` that brings it to overlap with the target, 
+    - -0.25, if the agent does an ``Action`` that brings it to overlap with the opponent,
+    - -0.1, if the agent does an ``Action`` that brings him one step away from the opponent,
+    - -0.01, otherwise. 
+    """
 
     @override
     def __call__(self, state: State, next_state: State) -> float:
@@ -29,6 +42,13 @@ class DenseRewardFunction(RewardFunction):
         return -0.01
 
 class SparseRewardFunction(RewardFunction):
+    """A sparse ``RewardFunction``.
+    
+    Return
+    - 1, if the agent overlaps with the target,
+    - -1, if the agent overlaps with the opponent,
+    - 0, otherwise.
+    """
 
     @override
     def __call__(self, state: State, next_state: State) -> float:

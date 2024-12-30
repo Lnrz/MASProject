@@ -7,18 +7,22 @@ from typing import override
 import random as rnd
 
 class PolicyFun(ABC):
+    """Interface for the policy functors."""
 
     @abstractmethod
     def __call__(self, state: State) -> Action:
+        """Return an ``Action`` based on ``state``."""
         ...
 
 class UniformPolicy(PolicyFun):
+    """``PolicyFun`` giving to each ``Action`` the same probability of being chosen."""
 
     @override
     def __call__(self, state: State) -> Action:
         return Action(rnd.randrange(Action.MAX_EXCLUSIVE))
 
 class AgentPolicy(PolicyFun):
+    """``PolicyFun`` that returns ``Action``s based on the given ``Policy`` and ``ValidStateSpace``."""
 
     def __init__(self, policy: Policy, valid_state_space: ValidStateSpace) -> None:
         self.__policy: Policy = policy
