@@ -9,7 +9,8 @@ from collections.abc import Callable
 from typing import override
 
 class GameConfigs(BaseConfigs):
-
+    """``BaseConfigs`` specialized for game sessions."""
+    
     def __init__(self) -> None:
         super().__init__()
         self.__agent_start: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
@@ -133,12 +134,14 @@ class GameConfigs(BaseConfigs):
         self.__check_for_collision_with_obstacles("Opponent", self.opponent_start)
     
     def __check_for_same_starting_position(self, name1: str, pos1: Vec2D, name2: str, pos2: Vec2D) -> None:
+        """Check that ``pos1`` and ``pos2`` don't overlap. If they do raise ``ValueError``."""
         if pos1 == pos2:
             raise ValueError(f"{name1} and {name2} should start at different positions.\n"
                             + f"{name1}: ({pos1.x}, {pos1.y})\n"
                             + f"{name2}: ({pos2.x}, {pos2.y})")
     
     def __check_for_out_of_bounds(self, name: str, pos: Vec2D) -> None:
+        """Check that ``pos`` is not out of bounds. If not raise ``ValueError``."""
         if (pos.x < 0 or pos.x >= self.map_size.x or
             pos.y < 0 or pos.y >= self.map_size.y):
             raise ValueError(f"{name} is out of bounds:\n"
@@ -146,6 +149,10 @@ class GameConfigs(BaseConfigs):
                              + f"{name}'s position was ({pos.x},{pos.y})")
     
     def __check_for_collision_with_obstacles(self, name: str, pos: Vec2D) -> None:
+        """Check that ``pos`` does not collide with any obstacle.
+        
+        If it collides with at least an obstacle raise ``ValueError``.
+        """
         for obstacle in self.obstacles:
             if obstacle.is_inside(pos):
                 raise ValueError(f"{name} is colliding with an obstacle.\n"

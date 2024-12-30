@@ -8,6 +8,7 @@ from collections.abc import Callable
 from typing import override
 
 class TrainConfigs(BaseConfigs):
+    """``BaseConfigs`` specialized for train sessions."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -130,16 +131,19 @@ class TrainConfigs(BaseConfigs):
         self.__check_non_negativity(self.changed_actions_percentage_tolerance, "Changed actions percentage tolerance")
 
     def __check_between_zero_and_one(self, value: float, name: str) -> None:
+        """Check that ``value`` is between zero and one, otherwise raise ``ValueError``."""
         if value < 0 or value > 1:
             raise ValueError(f"{name} should be between 0 and 1\n" +
                              f"It was {value}")
 
     def __check_positivity(self, value: int | float, name: str) -> None:
+        """Check that ``value`` is positive, otherwise raise ``ValueError``."""
         if value <= 0:
             raise ValueError(f"{name} should be > 0.\n" +
                              f"It was {value}")
 
     def __check_non_negativity(self, value: float | int, name: str) -> None:
+        """Check that ``value`` is not negative, otherwise raise ``ValueError``."""
         if value < 0:
             raise ValueError(f"{name} should be >= 0" +
                              f"It was {value}")

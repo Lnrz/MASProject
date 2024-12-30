@@ -5,12 +5,25 @@ from collections.abc import Callable
 from abc import ABC, abstractmethod
 
 class  ConfigArgument[T]:
+    """A generic argument.
+    
+    Used to impose a priority to how arguments are set:
+      User > Configuration File > Default
+
+    It should be initialized with the default value.
+
+    It should be set through ``set_if_not_frozen`` with the value given by the configuration file.
+
+    It should be set through ``set_and_freeze`` with the value given by the user.
+    """
 
     def __init__(self, value: T) -> None:
+        """Set the initial value to ``value``."""
         self.value: T = value
         self.frozen: bool = False
     
     def set_and_freeze(self, value: T) -> None:
+        """Set the argument to ``value`` and freeze it."""
         if isinstance(value, type(self.value)):
             self.value = value
             self.frozen = True
@@ -19,12 +32,29 @@ class  ConfigArgument[T]:
                   f"Expected {type(self.value)}, but got {type(value)}")
 
     def set_if_not_frozen(self, value: T) -> None:
+        """If the argument is not frozen set it to ``value``."""
         if not self.frozen:
             self.value = value
 
 class BaseConfigs(ABC):
+    """Configuration base class.
+    
+    The children should only implement the abstract methods:
+    - ``_process_line_helper``
+    - ``_check_helper``
+    - ``_create_helper``
+    
+    and provide properties for their specific ``ConfigArgument``s.
+
+    The class also provides a ``line_processing_extension`` member that will be used to
+    read unrecognized configuration lines.
+
+    ``line_processing_extension`` should be a callable that accepts in input the configuration object itself and
+    a list of string created by casefolding and splitting by whitespaces the unrecognized configuration line.
+    """
 
     def __init__(self) -> None:
+        """Initialize the configuration with the default arguments."""
         self.__configs_file_path: ConfigArgument[str] = ConfigArgument("")
         self.__policy_file_path: ConfigArgument[str] = ConfigArgument("")
         self.__map_size: ConfigArgument[Vec2D]  = ConfigArgument(Vec2D())
@@ -73,23 +103,26 @@ class BaseConfigs(ABC):
         self.__agent_markov_transition_density_factory.set_and_freeze(factory)
 
     def validate(self) -> None:
+        """Check the arguments and create the necessary objects."""
         self.__apply_file()
         self.__check()
         self.__create()
 
     def __apply_file(self) -> None:
+        """Read the configuration file arguments."""
         if not self.configs_file_path:
             return
         with open(self.configs_file_path) as f:
             for line in f.readlines():
                 if line.isspace():
                     continue
-                line = line.casefold()
                 self.__process_line(line)
 
     def __process_line(self, line: str) -> None:
+        """Read ``line``, setting the arguments accordingly."""
         if line.startswith("#"):
             return
+        line = line.casefold()
         splitted_line: list[str] = line.split()
         has_match: bool = True
         match splitted_line:
@@ -118,23 +151,36 @@ class BaseConfigs(ABC):
     
     @abstractmethod
     def _process_line_helper(self, splitted_line: list[str]) -> bool:
+        """Helper method to let subclasses read configuration lines not recognized by the base class.
+        
+        ``splitted_line`` is a ``list`` of ``str`` made from casefolding and splitting by whitespaces the original line.
+
+        The implementation should return ``True`` if it was able to recognize the line, otherwise ``False``.
+        """
         ...
 
     def __check(self) -> None:
+        """Check if the arguments are valid."""
         self.__check_map_size()
         self.__check_obstacles()
         self._check_helper()
     
     @abstractmethod
     def _check_helper(self) -> None:
+        """Helper method to let subclasses do their checks."""
         ...
     
     def __check_map_size(self) -> None:
+        """Check that the map is big enough and that its width and height are positive. If not raise ``ValueError``."""
         if self.map_size.x * self.map_size.y < 3 or self.map_size.x < 0:
             raise ValueError(f"Map size should be positive and have at least 3 cells.\n"
                              + f"Map Size: ({self.map_size.x}, {self.map_size.y})")
 
     def __check_obstacles(self) -> None:
+        """Check that the obstacles are not out of bounds.
+        
+        If at least one is out of bounds raise ``ValueError``.
+        """
         for obstacle in self.obstacles:
             if not obstacle.is_inside_bounds(self.map_size):
                 raise ValueError(f"An obstacle was out of bounds\n" +
@@ -142,9 +188,11 @@ class BaseConfigs(ABC):
                                  f"Map was {self.map_size.x}x{self.map_size.y}")
 
     def __create(self) -> None:
+        """Create the necessary objects."""
         self.agent_markov_transition_density: MarkovTransitionDensity = self.agent_markov_transition_density_factory(self)
         self._create_helper()
 
     @abstractmethod
     def _create_helper(self) -> None:
+        """Helper method to let subclasses create their specific objects."""
         ...
