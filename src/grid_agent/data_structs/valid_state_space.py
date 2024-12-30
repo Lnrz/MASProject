@@ -11,7 +11,7 @@ import multiprocessing as mp
 from array import array
 
 class ValidStateSpaceArray(Protocol):
-
+    """Protocol for the container used by ``ValidStateSpace``."""
     @overload
     def __getitem__(self, index: int) -> int:
         ...
@@ -21,9 +21,15 @@ class ValidStateSpaceArray(Protocol):
         ...
 
 class ValidStateSpaceIterator:
+    """Iterator for ``ValidStateSpace``."""
+    def __init__(self, states_indices: ValidStateSpaceArray, space_size: int, map_size: MapSize, reversed: bool) -> None:
+        """Make an iterator for ``states_indices`` of size ``space_size``.
+        
+        ``map_size`` is needed for converting indices back to ``State``s.
 
-    def __init__(self, states: ValidStateSpaceArray, space_size: int, map_size: MapSize, reversed: bool) -> None:
-        self.__array: ValidStateSpaceArray = states
+        If ``reversed`` is ``True`` the order of iteration is reversed.
+        """
+        self.__array: ValidStateSpaceArray = states_indices
         self.__space_size: int = space_size
         self.__map_size: MapSize = map_size
         self.__reversed: bool = reversed
@@ -34,6 +40,10 @@ class ValidStateSpaceIterator:
         return self
 
     def __next__(self) -> State:
+        """Return the next valid ``State``.
+        
+        Throw ``StopIteration`` if the iteration is finished.
+        """
         if (self.__current_index == self.__space_size or
             self.__current_index == -1):
             raise StopIteration()
@@ -42,8 +52,9 @@ class ValidStateSpaceIterator:
         return self.__state
 
 class ValidStateSpace(ABC):
-
+    """The space of valid ``State``s."""
     def __init__(self, map_size: Vec2D, obstacles: Iterable[Obstacle]) -> None:
+        """Given ``map_size`` and ``obstacles`` initialize the space of valid ``State``s."""
         self.map_size: MapSize = MapSize(map_size.x, map_size.y)
         self.space_size: int = 0
         self.__valid_cache: OrderedDict[int, int] = OrderedDict()
@@ -63,9 +74,21 @@ class ValidStateSpace(ABC):
 
     @abstractmethod
     def _get_collection(self, indices: list[int], types: tuple[str, c_uint_types]) -> ValidStateSpaceArray:
+        """Return the container that ``ValidStateSpace`` will use to store the indices of valid ``State``s."""
         ...
 
     def get_valid_index(self, state: State) -> int:
+        """Return the valid index of ``state``.
+        
+        The valid index is the index of ``state`` if counting only valid ``State``s.
+
+        Return -1 if ``state`` is not valid.
+
+        WARNING
+          It doesn't check if the positions of ``state`` are out of bounds.
+
+          Use ``is_state_within_bounds`` method if not sure.
+        """
         state_index: int = state.to_index(self.map_size)
         valid_index: int | None = self.__valid_cache.get(state_index)
         if valid_index is not None:
@@ -73,12 +96,18 @@ class ValidStateSpace(ABC):
         is_valid: bool
         is_valid, valid_index = self.__binary_search(state_index)
         if not is_valid:
-            raise ValueError("Should not happen")
+            return -1
         self.__add_to_valid_cache(state_index, valid_index)
         return valid_index
     
     def is_state_outside_obstacles(self, state: State) -> bool:
-        # assume that state is inside bounds
+        """Return ``True`` if ``state`` doesn't contain any positions in collision with obstacles.
+        
+        WARNING
+          It doesn't check if the positions of ``state`` are out of bounds.
+        
+          Use ``is_state_within_bounds`` method if not sure.
+        """
         state_index: int = state.to_index(self.map_size)
         if state_index in self.__valid_cache:
             return True
@@ -94,18 +123,28 @@ class ValidStateSpace(ABC):
         return is_valid
 
     def __add_to_valid_cache(self, state_index: int, valid_state_index: int) -> None:
+        """Add to the cache of indices of valid ``State``s ``state_index`` associated with ``valid_state_index``."""
         self.__valid_cache[state_index] = valid_state_index
         self.__load_near_states_to_cache(state_index, valid_state_index, True)
         if len(self.__valid_cache) == self.__max_cache_length:
             self.__valid_cache.popitem(last=False)
 
     def __add_to_not_valid_cache(self, state_index: int, last_smaller_valid_index: int) -> None:
+        """Add to the cache of indices of not valid ``State``s ``state_index`` associated with ``last_smaller_valid_index``."""
         self.__not_valid_cache[state_index] = last_smaller_valid_index
         self.__load_near_states_to_cache(state_index, last_smaller_valid_index, False)
         if len(self.__not_valid_cache) == self.__max_cache_length:
             self.__not_valid_cache.popitem(last=False)
 
     def __load_near_states_to_cache(self, state_index: int, valid_state_index: int, is_state_valid: bool) -> None:
+        """Add into the caches the indices of the states near the state of index ``state_index``.
+        
+        ``is_state_valid`` is ``bool`` signalling if ``state_index`` was put into the cache of indices
+        of valid states or into the cache of indices of not valid states.
+
+        ``valid_state_index`` is the valid index associated with ``state_index`` if ``is_state_valid`` is ``True``
+        otherwise is the index of the last smaller index of a valid ``State`` respect to ``state_index``. 
+        """
         prev_valid_state_index: int = valid_state_index - 1 if is_state_valid else valid_state_index
         prev_state_index: int = state_index - 1
         next_valid_state_index: int = valid_state_index + 1
@@ -139,9 +178,11 @@ class ValidStateSpace(ABC):
             self.__not_valid_cache.popitem(last=False)
 
     def copy_valid_state_to(self, state: State, index: int) -> None:
+        """Copy into ``state`` the ``State`` found at ``index``."""
         state.from_index(self.__array[index], self.map_size)
 
     def __select_type(self, number_of_states: int) -> tuple[str, c_uint_types]:
+        """Select the smallest type of unsigned integer able to index ``number_of_states``."""
         match number_of_states:
             case n if n <= 2 ** 8:
                 return ("B",  c_ubyte)
@@ -153,6 +194,13 @@ class ValidStateSpace(ABC):
                 return ("Q", c_ulonglong)
     
     def __binary_search(self, state_index: int) -> tuple[bool, int]:
+        """Perform a binary search into the indices of valid ``State``s.
+        
+        Return
+          ``True`` and the valid index of ``state_index`` if found.
+
+          ``False`` and the valid index of the last valid ``State`` whose index is smaller than ``state_index``.
+        """
         i: int = 0
         j: int = self.space_size - 1
         while i <= j:
@@ -167,6 +215,7 @@ class ValidStateSpace(ABC):
         return (False, j)
 
     def __is_state_valid(self, state: State, obstacles: Iterable[Obstacle]) -> bool:
+        """Return ``True`` if ``state`` is valid, given ``obstacles``."""
         if state.target_pos == state.opponent_pos:
             return False
         for obstacle in obstacles:
@@ -177,24 +226,30 @@ class ValidStateSpace(ABC):
         return True
     
     def is_state_within_bounds(self, state: State) -> bool:
+        """Return ``True`` if ``state`` is within the bounds contained by ``ValidStateSpace``."""
         return (self.__is_pos_within_bounds(state.agent_pos) and
                 self.__is_pos_within_bounds(state.opponent_pos) and
                 self.__is_pos_within_bounds(state.target_pos))
 
     def __is_pos_within_bounds(self, pos: Vec2D) -> bool:
+        """Return ``True`` if ``pos`` is within the bounds contained by ``ValidStateSpace``."""
         return (pos.x > -1 and pos.x < self.map_size.N and
                 pos.y > -1 and pos.y < self.map_size.M)
 
     def __iter__(self) -> ValidStateSpaceIterator:
+        """Return an iterator of ``ValidStateSpace``."""
         return ValidStateSpaceIterator(self.__array, self.space_size, self.map_size, False)
     
     def __reversed__(self) -> ValidStateSpaceIterator:
+        """Return a reversed iterator of ``ValidStateSpace``."""
         return ValidStateSpaceIterator(self.__array, self.space_size, self.map_size, True)
 
     def __len__(self) -> int:
+        """Return the length of ``ValidStateSpace``."""
         return self.space_size
     
     def __getitem__(self, index: int | slice) -> State | Sequence[State]:
+        """Return the ``State``(or a ``Sequence`` of ``State``) associated with ``index``(or indices)."""
         state_indices: int | Sequence[int] = self.__array[index]
         if isinstance(state_indices, int):
             state: State = State()
@@ -206,6 +261,7 @@ class ValidStateSpace(ABC):
         return states
 
     def __contains__(self, obj: int | State) -> bool:
+        """Return ``True`` if ``obs`` is a valid ``State`` or the index of a valid ``State``."""
         if isinstance(obj, int):
             return self.__binary_search(obj)[0]
         if isinstance(obj, State):
@@ -213,13 +269,13 @@ class ValidStateSpace(ABC):
         return False
 
 class ValidStateSpaceSequential(ValidStateSpace):
-
+    """``ValidStateSpace`` specialized for sequential learning."""
     @override
     def _get_collection(self, indices: list[int], types: tuple[str, c_uint_types]) -> ValidStateSpaceArray:
         return array(types[0], indices)
 
 class ValidStateSpaceParallel(ValidStateSpace):
-
+    """``ValidStateSpace`` specialized for parallel learning."""
     @override
     def _get_collection(self, indices: list[int], types: tuple[str, c_uint_types]) -> ValidStateSpaceArray:
         return mp.RawArray(types[1], indices)
