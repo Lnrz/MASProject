@@ -11,18 +11,34 @@ from enum import IntEnum
 
 @dataclass
 class GameData:
+    """Struct containing the necessary data to view a frame of the game session.
+    
+    It consists of:
+    - ``state``: the state of the game in the current frame, containing the positions of the agent, target and opponent.
+    - ``agent_action``: the ``Action`` the agent chose for the next frame.
+    - ``target_action``: the ``Action`` the target chose for the next frame.
+    - ``opponent_action``: the ``Action`` the opponent chose for the next frame.
+    """
     state: State = field(default_factory=lambda: State())
     agent_action: Action = Action.MAX_EXCLUSIVE
     target_action: Action = Action.MAX_EXCLUSIVE
     opponent_action: Action = Action.MAX_EXCLUSIVE
 
 class Result(IntEnum):
+    """Enum enumerating the possible states of the game."""
     FAIL = 0,
     SUCCESS = 1,
     WAITING_FOR_RESULT = 2
 
 class GameManager:
+    """Manager to be used for game sessions.
     
+    It provides the method ``register_callback`` to which the user can pass a ``Callable[[GameData], None]``
+    that will be called between each game iteration with a copy of the updated ``GameData``.
+    
+    This makes possible to implement viewers for the game session.
+    """
+
     def __init__(self, game_configuration: GameConfigs) -> None:
         game_configuration.validate()
         self.__valid_state_space: ValidStateSpace = game_configuration.valid_state_space
@@ -35,9 +51,11 @@ class GameManager:
         self.__callback: Callable[[GameData], None] = lambda g: None
 
     def register_callback(self, callback: Callable[[GameData], None]) -> None:
+        """Register the ``callback`` to call between each game iteration."""
         self.__callback = callback
 
     def start(self) -> Result:
+        """Start the game session."""
         while self.__res == Result.WAITING_FOR_RESULT:
             self.__gamedata.state = deepcopy(self.__state)
             self.__next_iteration()
@@ -48,6 +66,7 @@ class GameManager:
         return self.__res
 
     def __next_iteration(self) -> None:
+        """Perform an iteration of the game session."""
         self.__gamedata.agent_action = self.__agent.move(self.__state, self.__valid_state_space)
         if self.__check_for_result():
             return
@@ -56,6 +75,7 @@ class GameManager:
         self.__check_for_result()
 
     def __check_for_result(self) -> bool:
+        """Return ``True`` if the game session ended and set the result accordingly. Otherwise return ``False``."""
         match self.__state.agent_pos:
             case self.__state.target_pos:
                 self.__res = Result.SUCCESS
