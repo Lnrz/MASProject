@@ -8,7 +8,31 @@ from collections.abc import Callable
 from typing import override
 
 class TrainConfigs(BaseConfigs):
-    """``BaseConfigs`` specialized for train sessions."""
+    """``BaseConfigs`` specialized for train sessions.
+    
+    The class provides a ``line_processing_extension`` member that will be used to
+    read unrecognized configuration lines.
+
+    ``line_processing_extension`` should be a callable that accepts in input the configuration object itself and
+    a list of string created by casefolding and splitting by whitespaces the unrecognized configuration line.
+
+    The arguments are:
+    - ``config_file_path``: the path to the configuration file.
+    - ``policy_file_path``: the path where to save the policy.
+    - ``map_size``: a ``Vec2D`` specifying size of the map.
+    - ``obstacles``: a ``list`` of ``Obstacle``s.
+    - ``agent_markov_transition_density_factory``: a factory providing the ``MarkovTransitionDensity`` of the agent.
+    - ``reward_factory``: a factory providing the ``RewardFunction`` to use for learning.
+    - ``processes_number``: the number of processes that will be executed.
+    - ``discount_factor``: the discount factor to use for learning.
+    - ``use_float``: a bool to indicate whether to use float or double to store the value functions' values.
+    - ``is_dry_run``: a bool to indicate whether to save or not the policy.
+    - ``max_iter``: the maximum number of iterations before stopping the learning process.
+    - ``value_function_tolerance``: if the maximum difference between the previous value functions' values and
+    the next value functions' values is less than this value the learning process is stopped.
+    - ``changed_actions_tolerance``: if the number of changed actions is less than this value the learning process is stopped.
+    - ``changed_actions_percentage_tolerance``: if the percentage of changed actions is less than this value the learning process is stopped.
+    """
 
     def __init__(self) -> None:
         super().__init__()

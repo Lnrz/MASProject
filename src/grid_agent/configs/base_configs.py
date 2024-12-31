@@ -51,6 +51,13 @@ class BaseConfigs(ABC):
 
     ``line_processing_extension`` should be a callable that accepts in input the configuration object itself and
     a list of string created by casefolding and splitting by whitespaces the unrecognized configuration line.
+
+    The arguments are:
+    - ``config_file_path``: the path to the configuration file.
+    - ``policy_file_path``: the path to the policy file.
+    - ``map_size``: a ``Vec2D`` specifying the size of the map.
+    - ``obstacles``: a ``list`` of ``Obstacle``s.
+    - ``agent_markov_transition_density_factory``: a factory providing the ``MarkovTransitionDensity`` of the agent.
     """
 
     def __init__(self) -> None:

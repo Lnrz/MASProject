@@ -9,7 +9,29 @@ from collections.abc import Callable
 from typing import override
 
 class GameConfigs(BaseConfigs):
-    """``BaseConfigs`` specialized for game sessions."""
+    """``BaseConfigs`` specialized for game sessions.
+    
+    The class provides a ``line_processing_extension`` member that will be used to
+    read unrecognized configuration lines.
+
+    ``line_processing_extension`` should be a callable that accepts in input the configuration object itself and
+    a list of string created by casefolding and splitting by whitespaces the unrecognized configuration line.
+
+    The arguments are:
+    - ``config_file_path``: the path to the configuration file.
+    - ``policy_file_path``: the path to the policy file to use.
+    - ``map_size``: a ``Vec2D`` specifying size of the map.
+    - ``obstacles``: a ``list`` of ``Obstacle``s.
+    - ``agent_markov_transition_density_factory``: a factory providing the ``MarkovTransitionDensity`` of the agent.
+    - ``target_markov_transition_density_factory``: a factory providing the ``MarkovTransitionDensity`` of the target.
+    - ``opponent_markov_transition_density_factory``: a factory providing the ``MarkovTransitionDensity`` of the opponent.
+    - ``agent_start``: a ``Vec2D`` specifiyng the starting position of the agent.
+    - ``target_start``: a ``Vec2D`` specifiyng the starting position of the target.
+    - ``opponent_start``: a ``Vec2D`` specifiyng the starting position of the opponent.
+    - ``agent_policy_factory``: a factory providing the ``PolicyFun`` of the agent.
+    - ``target_policy_factory``: a factory providing the ``PolicyFun`` of the target.
+    - ``opponent_policy_factory``: a factory providing the ``PolicyFun`` of the opponent.
+    """
     
     def __init__(self) -> None:
         super().__init__()
