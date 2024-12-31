@@ -9,6 +9,7 @@ from typing import Callable, Any
 import json
 
 class TrainDataView:
+    """Object that allow the user to see the learning statistics."""
 
     def __init__(self) -> None:
         self.__iteration_indices: list[int] = []
@@ -17,15 +18,18 @@ class TrainDataView:
         self.__changed_actions_percentages: list[float] = []
 
     def get_callback(self) -> Callable[[TrainData], None]:
+        """Return the callback for ``TrainManager``."""
         return lambda train_data: self.__add_traindata(train_data)
 
     def __add_traindata(self, traindata: TrainData) -> None:
+        """Extract from ``traindata`` the necessary data."""
         self.__iteration_indices.append(traindata.iteration_number)
         self.__mean_values.append(traindata.mean_value)
         self.__changed_actions.append(traindata.changed_actions_number)
         self.__changed_actions_percentages.append(traindata.changed_actions_percentage)
 
     def display(self) -> None:
+        """Display the learning statistics."""
         plt.style.use("dark_background")
         fig: Figure
         mean_values_axes: Axes
@@ -62,6 +66,7 @@ class TrainDataView:
         plt.show()
 
     def read_from_file(self, file_path: str) -> None:
+        """Read the learning data from ``file_path``."""
         with open(file_path, "rt") as f:
             data: Any = json.load(f)
             if ("iteration_indices" not in data or
@@ -75,6 +80,7 @@ class TrainDataView:
             self.__changed_actions_percentages = data["changed_actions_percentages"]
 
     def write_to_file(self, file_path: str) -> None:
+        """Write the learning data in ``file_path``."""
         with open(file_path, "wt") as f:
             json.dump({ "iteration_indices" : self.__iteration_indices,
                         "mean_values" : self.__mean_values,
