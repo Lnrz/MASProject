@@ -37,10 +37,14 @@ class PolicySequential(Policy):
         """Make a ``Policy`` and load into it the ``Action``s stored in the binary file found in the path specified by ``policy_file_name``."""
         p: PolicySequential = PolicySequential()
         p._arr = array("B")
-        with open(policy_file_name, "rb") as f:
-            policy_size: int = f.seek(0, 2)
-            f.seek(0, 0)
-            p._arr.fromfile(f, policy_size)
+        try:
+            with open(policy_file_name, "rb") as f:
+                policy_size: int = f.seek(0, 2)
+                f.seek(0, 0)
+                p._arr.fromfile(f, policy_size)
+        except FileNotFoundError:
+            raise ValueError(f"Could not load the policy file: {policy_file_name}.\n"
+                             "It did not exist.")
         return p
 
 class PolicyParallel(Policy):

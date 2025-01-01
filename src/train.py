@@ -11,7 +11,7 @@ def main() -> None:
 
 
 def get_command_line_arguments() ->  Namespace:
-  parser: ArgumentParser = ArgumentParser(prog="Grid Agent - Train", description="TODO")
+  parser: ArgumentParser = ArgumentParser(prog="Grid Agent - Train", description="A simple script to run training sessions.")
   
   parser.add_argument("configs", type=str, help="Path to the configuration file")
   parser.add_argument("-p", "--policy", type=str, help="Path where to save the policy file")

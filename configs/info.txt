@@ -18,10 +18,10 @@ DDMTD AGENT chosen_action_probability right_action_probability opposite_action_p
     "right_action_probability" is the probability that the agent wil do the action on the right relative to the chosen action. (ex. DOWN)
     "opposite_action_probability" is the probability that the agent will do the opposite action. (ex. LEFT)
     "left_action_probability" is the probability that the agent wil do the action on the left relative to the chosen action. (ex. UP)
-    Default to 0.9 0.05 0.0 0.5.
+    Default to 0.9 0.05 0.0 0.05.
 POLICY policy_file_path:
     specifies the path to the policy file.
-    In train mode is used to save the policiy file.
+    In train mode is used to save the policy file.
     In play mode is used to load the policy file.
 
 

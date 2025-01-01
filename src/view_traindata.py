@@ -9,7 +9,7 @@ def main() -> None:
 
 
 def get_command_line_arguments() ->  Namespace:
-  parser: ArgumentParser = ArgumentParser(prog="Grid Agent - View Train Data", description="TODO")
+  parser: ArgumentParser = ArgumentParser(prog="Grid Agent - View Train Data", description="A simple script to view saved learning statistics.")
   
   parser.add_argument("train_data", type=str, help="Path to the train data")
   

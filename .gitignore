@@ -21,6 +21,7 @@ __pycache__/
 # Config files
 *.cfg
 !configs/example.cfg
+!configs/extension_example.cfg
 !configs/template.cfg
 
 # Train data files

@@ -19,15 +19,15 @@ def main() -> None:
 
 
 def get_command_line_arguments() ->  Namespace:
-  parser: ArgumentParser = ArgumentParser(prog="Grid Agent - Game", description="TODO")
+  parser: ArgumentParser = ArgumentParser(prog="Grid Agent - Game", description="A simple script to run game sessions.")
   
   parser.add_argument("configs", type=str, help="Path to the configuration file")
-  parser.add_argument("-p", "--policy", type=str, help="Path to the policy file")
+  parser.add_argument("-p", "--policy", type=str, help="Path to the policy file to load")
   parser.add_argument("-as", "--agent_start", type=str, help="Agent start position (x,y)")
   parser.add_argument("-ts", "--target_start", type=str, help="Target start position (x,y)")
   parser.add_argument("-os", "--opponent_start", type=str, help="Opponent start position (x,y)")
-  parser.add_argument("-t", "--time_step", type=float, default=1.5, help="How many seconds between each game step")
-  parser.add_argument("-m", "--manual", action="store_true", help="Activate manual view")
+  parser.add_argument("-t", "--time_step", type=float, default=1.5, help="How many seconds between each game frame")
+  parser.add_argument("-m", "--manual", action="store_true", help="Activate manual view of the game")
   
   return parser.parse_args()
 
