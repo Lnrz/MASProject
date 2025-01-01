@@ -13,7 +13,7 @@ from enum import IntEnum
 class GameData:
     """Struct containing the necessary data to view a frame of the game session.
     
-    It consists of:
+    It contains of:
     - ``state``: the state of the game in the current frame, containing the positions of the agent, target and opponent.
     - ``agent_action``: the ``Action`` the agent chose for the next frame.
     - ``target_action``: the ``Action`` the target chose for the next frame.
@@ -31,12 +31,12 @@ class Result(IntEnum):
     WAITING_FOR_RESULT = 2
 
 class GameManager:
-    """Manager to be used for game sessions.
+    """Manager of game sessions.
     
     It provides the method ``register_callback`` to which the user can pass a ``Callable[[GameData], None]``
     that will be called between each game iteration with a copy of the updated ``GameData``.
     
-    This makes possible to implement viewers for the game session.
+    This makes possible to implement viewers for game sessions.
     """
 
     def __init__(self, game_configuration: GameConfigs) -> None:

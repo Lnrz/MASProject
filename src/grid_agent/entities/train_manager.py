@@ -22,6 +22,15 @@ import math
 
 @dataclass
 class TrainData:
+    """Struct containing the data of an iteration of the policy iteration algorithm.
+    
+    It contains of:
+    - ``iteration_number``: the number of the iteration.
+    - ``mean_value``: the mean value of the value function computed in the policy evaluation step.
+    - ``max_value_diff``: the maximum difference between the previous value function and the value function computed in the policy evaluation step.
+    - ``changed_actions_number``: the number of actions that were changed during the policy improvement step.
+    - ``changed_actions_percentage``: the percentage of actions that were changed during the policy improvement step.
+    """
     iteration_number: int = 0
     mean_value: float = 0.0
     max_value_diff: float = 0.0
@@ -29,7 +38,14 @@ class TrainData:
     changed_actions_percentage: float = 0.0
 
 class TrainManager:
+    """Manager of train sessions.
     
+    It provides the method ``register_callback`` to which the user can pass a ``Callable[[TrainData], None]``
+    that will be called between each iteration of the policy iteration algorithm with a copy of the updated ``TrainData``.
+    
+    This makes possible to implement viewers for train sessions.
+    """
+
     def __init__(self, train_configuration: TrainConfigs) -> None:
         train_configuration.validate()
         self.__traindata: TrainData = TrainData(
@@ -52,6 +68,7 @@ class TrainManager:
             self.__init_parallel(train_configuration)
 
     def __init_sequential(self, train_configuration: TrainConfigs) -> None:
+        """Initialization for the sequential case."""
         self.__discount_factor: float = train_configuration.discount_factor
         self.__valid_states_space: ValidStateSpace = train_configuration.valid_state_space
         self.__policy: Policy = train_configuration.policy
@@ -64,6 +81,7 @@ class TrainManager:
         self.__next_states_values: list[float] = [0.0 for i in self.__actions]
 
     def __init_parallel(self, train_configuration: TrainConfigs) -> None:
+        """Initialization for the parallel case."""
         context: DefaultContext = mp.get_context()
         value_type: type[c_floats] = train_configuration.value_functions_container.get_type()
         self.__valid_state_space_size: int = train_configuration.valid_state_space.space_size
@@ -97,6 +115,7 @@ class TrainManager:
             print("WARNING: there are more processes than valid states")
 
     def __get_processes_intervals(self) -> list[tuple[int, int]]:
+        """Return the intervals of valid states on which each process will work."""
         states_per_process: int = self.__valid_state_space_size // self.__processes_number
         remainder: int = self.__valid_state_space_size % self.__processes_number
         intervals: list[tuple[int, int]] = []
@@ -111,15 +130,18 @@ class TrainManager:
         return intervals
 
     def register_callback(self, callback: Callable[[TrainData], None]) -> None:
+        """Register the ``callback`` to call between each iteration of the policy iteration algorithm."""
         self.__callback = callback
 
     def start(self) -> None:
+        """Start the training session."""
         if self.__processes_number == 1:
             self.__start_sequential()
         else:
             self.__start_parallel()
 
     def __start_sequential(self) -> None:
+        """Execute the policy iteration algorithm sequentially."""
         while (not self.__check_stop_conditions()):
             self.__prepare_traindata()
             print(f"{self.__traindata.iteration_number}-th iteration", end="\r")
@@ -131,6 +153,7 @@ class TrainManager:
             self.__policy.write_to_file(self.__policy_file_path)
 
     def __start_parallel(self) -> None:
+        """Execute the policy iteration algorithm parallelly."""
         for process in self.__processes:
             process.start()
         while not self.__check_stop_conditions():
@@ -147,12 +170,14 @@ class TrainManager:
             self.__shared_data.policy.write_to_file(self.__policy_file_path)
 
     def __check_stop_conditions(self) -> bool:
+        """If the stopping conditions are met return ``True``."""
         return (self.__traindata.iteration_number >= self.__max_iter or
                 self.__traindata.max_value_diff <= self.__value_function_tolerance or
                 self.__traindata.changed_actions_number <= self.__changed_actions_tolerance or
                 self.__traindata.changed_actions_percentage <= self.__changed_actions_percentage_tolerance)
 
     def __prepare_traindata(self) -> None:
+        """Prepare ``TrainData`` for the next iteration."""
         self.__traindata.iteration_number += 1
         self.__traindata.changed_actions_number = 0
         self.__traindata.changed_actions_percentage = 0.0
@@ -160,6 +185,7 @@ class TrainManager:
         self.__traindata.max_value_diff = 0.0
 
     def __evaluate_policy_sequential(self) -> None:
+        """Sequential policy evaluation step."""
         for index, state in enumerate(self.__valid_states_space):
             action: Action = self.__policy.get_action(index)
             new_value: float = self.__calculate_new_value_function_value(state, index, action)
@@ -173,6 +199,7 @@ class TrainManager:
         self.__traindata.mean_value /= self.__valid_states_space.space_size
     
     def __improve_policy_sequential(self) -> None:
+        """Sequential policy improvement step."""
         for index, state in zip(range(self.__valid_states_space.space_size -1, -1, -1), reversed(self.__valid_states_space)):
             new_action: Action = max(self.__actions, key=lambda action: self.__mask_actions(state, index, action))
             old_action: Action = self.__policy.get_action(index)
@@ -182,6 +209,10 @@ class TrainManager:
         self.__traindata.changed_actions_percentage = self.__traindata.changed_actions_number / self.__valid_states_space.space_size
     
     def __calculate_new_value_function_value(self, state: State, state_index:int, chosen_action: Action, knows_chosen_action_is_valid: bool = False) -> float:
+        """Return the value of ``state``, of index ``state_index``, given that the current ``Policy`` returned ``chosen_action``.
+        
+        ``knows_chosen_action_is_valid`` is a ``bool`` used to speed up the processing if the user already knows that ``chosen_action`` brings to a valid ``State``.
+        """
         for next_state, action in zip(self.__next_states, self.__actions):
             self.__actions_probabilities[action] = self.__markov_transition_density(chosen_action, action)
             if self.__actions_probabilities[action] == 0.0:
@@ -196,6 +227,10 @@ class TrainManager:
                 self.__discount_factor * sum([next_state_value * probability for next_state_value, probability in zip(self.__next_states_values, self.__actions_probabilities)]))
 
     def __mask_actions(self, state: State, state_index: int, action: Action) -> float:
+        """Return the value of performing ``action`` when the state is ``state``, of index ``state_index``.
+        
+        If ``action`` brings to an invalid ``State`` return ``-inf``.
+        """
         is_valid: bool = state.move_checking_bounds(state.agent_pos, action, self.__valid_states_space.map_size)
         if not is_valid:
             return -math.inf
@@ -206,6 +241,7 @@ class TrainManager:
         return self.__calculate_new_value_function_value(state, state_index, action, is_valid)
     
     def __evaluate_policy_parallel(self) -> None:
+        """Parallel policy evaluation step."""
         self.__shared_data.value_event.set()
         for _ in range(self.__processes_number):
             self.__shared_data.semaphore.acquire()
@@ -215,6 +251,7 @@ class TrainManager:
         self.__traindata.max_value_diff = max(self.__shared_data.max_differences)
 
     def __improve_policy_parallel(self) -> None:
+        """Parallel policy improvement step."""
         self.__shared_data.policy_event.set()
         for _ in range(self.__processes_number):
             self.__shared_data.semaphore.acquire()
